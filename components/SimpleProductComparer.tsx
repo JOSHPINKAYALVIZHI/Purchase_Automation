@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Zap, Trophy, ShieldCheck, ShoppingBag, Truck, Star, CheckCircle2, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Zap, Trophy, ShieldCheck, ShoppingBag, Truck, Star, CheckCircle2, X, Filter } from 'lucide-react';
 
 export function SimpleProductComparer() {
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
@@ -25,7 +26,7 @@ export function SimpleProductComparer() {
         const json = await res.json();
         if (json.success && json.data.length > 0) {
           setProducts(json.data);
-          setSelectedProduct(json.data[0]); // Default first product
+          setSelectedProduct(json.data[0]);
         }
       } catch (err) {
         console.error('Error fetching products:', err);
@@ -36,7 +37,40 @@ export function SimpleProductComparer() {
     loadProducts();
   }, []);
 
-  // Fetch and sort offers Low to High
+  // Compute unique Categories dynamically from products
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set<string>();
+    products.forEach((p) => {
+      if (p.category && p.category.trim()) {
+        cats.add(p.category.trim());
+      }
+    });
+    return Array.from(cats).sort();
+  }, [products]);
+
+  // Filter products by selected category dropdown & search query
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCategory =
+        selectedCategory === 'ALL' || p.category.trim() === selectedCategory;
+
+      const matchesSearch =
+        search === '' ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.category.toLowerCase().includes(search.toLowerCase());
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, selectedCategory, search]);
+
+  // Automatically update selectedProduct when category or filter changes
+  useEffect(() => {
+    if (filteredProducts.length > 0 && (!selectedProduct || !filteredProducts.some(p => p.id === selectedProduct.id))) {
+      setSelectedProduct(filteredProducts[0]);
+    }
+  }, [filteredProducts, selectedProduct]);
+
+  // Fetch and sort offers Low to High for selected product
   useEffect(() => {
     if (!selectedProduct) return;
     async function loadOffers() {
@@ -59,13 +93,6 @@ export function SimpleProductComparer() {
     }
     loadOffers();
   }, [selectedProduct]);
-
-  // Filter products by search term
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
-  );
 
   const handleOrder = async () => {
     if (!selectedOffer || !selectedProduct) return;
@@ -104,52 +131,91 @@ export function SimpleProductComparer() {
       {/* Clean Header */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center space-y-2">
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-          <span>⚡ ProcureAI • Simple Price Finder</span>
+          <span>⚡ ProcureAI • Category Filter & Price Finder</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Select Solar Material & Compare Prices
+          Select Category & Material
         </h1>
         <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto">
-          Click any product below. All suppliers are listed from <strong>Lowest Price to Highest Price</strong>.
+          Choose a category from the dropdown or click a product to see suppliers ranked from <strong>Lowest to Highest Price</strong>.
         </p>
       </div>
 
-      {/* 1. Search Box */}
-      <div className="relative max-w-md mx-auto">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search items: 550W, MC4, Inverter, Cable..."
-          className="w-full bg-white border border-slate-300 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 shadow-sm"
-        />
+      {/* 1. Category Dropdown & Search Bar Container */}
+      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+        {/* Category Dropdown Select */}
+        <div className="relative w-full sm:w-64 shrink-0">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+            <Filter className="h-4 w-4" />
+          </div>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold text-xs sm:text-sm rounded-xl pl-10 pr-8 py-2.5 appearance-none focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 cursor-pointer"
+          >
+            <option value="ALL">All Categories ({uniqueCategories.length})</option>
+            {uniqueCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+            ▼
+          </div>
+        </div>
+
+        {/* Text Search Input */}
+        <div className="relative w-full">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search items within selected category..."
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
       </div>
 
-      {/* 2. Simple Product Buttons */}
+      {/* 2. Filtered Product Buttons */}
       <div className="space-y-2">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block text-center">
-          Step 1: Choose a Product
-        </span>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {filteredProducts.map((p) => {
-            const isSelected = selectedProduct?.id === p.id;
-            return (
-              <button
-                key={p.id}
-                onClick={() => setSelectedProduct(p)}
-                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center space-x-2 border ${
-                  isSelected
-                    ? 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-500/20 scale-105'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'
-                }`}
-              >
-                <Zap className={`h-4 w-4 ${isSelected ? 'text-white' : 'text-blue-600'}`} />
-                <span>{p.name}</span>
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Step 1: Select Product ({filteredProducts.length} items available)
+          </span>
+          {selectedCategory !== 'ALL' && (
+            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+              Category: {selectedCategory}
+            </span>
+          )}
         </div>
+
+        {filteredProducts.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 max-h-56 overflow-y-auto p-1">
+            {filteredProducts.map((p) => {
+              const isSelected = selectedProduct?.id === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedProduct(p)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 border ${
+                    isSelected
+                      ? 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-500/20 scale-105'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'
+                  }`}
+                >
+                  <Zap className={`h-3.5 w-3.5 ${isSelected ? 'text-white' : 'text-blue-600'}`} />
+                  <span>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-slate-500 text-xs bg-white rounded-xl border border-slate-200">
+            No products match category "{selectedCategory}".
+          </div>
+        )}
       </div>
 
       {/* 3. Company Price List (Low to High) */}
@@ -157,7 +223,7 @@ export function SimpleProductComparer() {
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between px-1 border-b border-slate-200 pb-3">
             <div>
-              <span className="text-xs text-slate-500">Step 2: Compare Companies for</span>
+              <span className="text-xs text-slate-500">Step 2: Compare Prices for</span>
               <h2 className="text-xl font-extrabold text-slate-900">{selectedProduct.name}</h2>
             </div>
             <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
