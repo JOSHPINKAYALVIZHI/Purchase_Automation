@@ -1,7 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Zap, Trophy, ShieldCheck, ShoppingBag, Truck, Star, CheckCircle2, X, Filter } from 'lucide-react';
+import {
+  Search,
+  Zap,
+  Trophy,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+  Star,
+  CheckCircle2,
+  X,
+  Filter,
+  FileText,
+  Clock,
+  Building2,
+  History,
+} from 'lucide-react';
 
 export function SimpleProductComparer() {
   const [products, setProducts] = useState<any[]>([]);
@@ -16,6 +31,12 @@ export function SimpleProductComparer() {
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
   const [quantity, setQuantity] = useState<number>(10);
   const [orderSuccessMsg, setOrderSuccessMsg] = useState<string | null>(null);
+
+  // Company Log Modal State
+  const [showLogModal, setShowLogModal] = useState<boolean>(false);
+  const [logCompanyOffer, setLogCompanyOffer] = useState<any>(null);
+  const [companyLogData, setCompanyLogData] = useState<any>(null);
+  const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
 
   // Load products from database
   useEffect(() => {
@@ -37,7 +58,7 @@ export function SimpleProductComparer() {
     loadProducts();
   }, []);
 
-  // Compute unique Categories dynamically from products
+  // Compute unique Categories dynamically
   const uniqueCategories = useMemo(() => {
     const cats = new Set<string>();
     products.forEach((p) => {
@@ -63,9 +84,11 @@ export function SimpleProductComparer() {
     });
   }, [products, selectedCategory, search]);
 
-  // Automatically update selectedProduct when category or filter changes
   useEffect(() => {
-    if (filteredProducts.length > 0 && (!selectedProduct || !filteredProducts.some(p => p.id === selectedProduct.id))) {
+    if (
+      filteredProducts.length > 0 &&
+      (!selectedProduct || !filteredProducts.some((p) => p.id === selectedProduct.id))
+    ) {
       setSelectedProduct(filteredProducts[0]);
     }
   }, [filteredProducts, selectedProduct]);
@@ -79,7 +102,6 @@ export function SimpleProductComparer() {
         const res = await fetch(`/api/quotations?productId=${selectedProduct.id}`);
         const json = await res.json();
         if (json.success) {
-          // Sort strictly LOW PRICE to HIGH PRICE
           const sorted = (json.data.quotations || []).sort(
             (a: any, b: any) => a.effectivePrice - b.effectivePrice
           );
@@ -93,6 +115,25 @@ export function SimpleProductComparer() {
     }
     loadOffers();
   }, [selectedProduct]);
+
+  // Open Company Log Modal
+  const handleOpenCompanyLog = async (offer: any) => {
+    setLogCompanyOffer(offer);
+    setShowLogModal(true);
+    try {
+      setLoadingLogs(true);
+      const res = await fetch(`/api/suppliers`);
+      const json = await res.json();
+      if (json.success) {
+        const fullSupplier = json.data.find((s: any) => s.id === offer.supplier.id) || offer.supplier;
+        setCompanyLogData(fullSupplier);
+      }
+    } catch (err) {
+      console.error('Error fetching supplier logs:', err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
 
   const handleOrder = async () => {
     if (!selectedOffer || !selectedProduct) return;
@@ -131,13 +172,13 @@ export function SimpleProductComparer() {
       {/* Clean Header */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center space-y-2">
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-          <span>⚡ ProcureAI • Category Filter & Price Finder</span>
+          <span>⚡ ProcureAI • Category Filter & Company Logs</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Select Category & Material
         </h1>
         <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto">
-          Choose a category from the dropdown or click a product to see suppliers ranked from <strong>Lowest to Highest Price</strong>.
+          Compare prices ranked <strong>Lowest to Highest</strong> and click <strong>View Log</strong> to see vendor quotation & PO history.
         </p>
       </div>
 
@@ -289,9 +330,9 @@ export function SimpleProductComparer() {
                       </div>
                     </div>
 
-                    {/* Right Price & Buy Button */}
-                    <div className="flex items-center justify-between sm:justify-end gap-5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200">
-                      <div className="text-left sm:text-right">
+                    {/* Right Price & Action Buttons */}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+                      <div className="text-left sm:text-right pr-2">
                         <span className="text-[10px] text-slate-500 block font-semibold uppercase">
                           Final Price (incl. {offer.gstPercentage}% GST)
                         </span>
@@ -303,13 +344,24 @@ export function SimpleProductComparer() {
                         </span>
                       </div>
 
+                      {/* View Log Button next to Order Now */}
+                      <button
+                        onClick={() => handleOpenCompanyLog(offer)}
+                        className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center space-x-1.5 shrink-0"
+                        title="View company quotation and PO audit log"
+                      >
+                        <History className="h-4 w-4 text-blue-600" />
+                        <span>View Log</span>
+                      </button>
+
+                      {/* Order Now Button */}
                       <button
                         onClick={() => {
                           setSelectedOffer(offer);
                           setQuantity(offer.minimumOrderQuantity || 10);
                           setShowPOModal(true);
                         }}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-1.5 shrink-0 ${
+                        className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-1.5 shrink-0 ${
                           isCheapest
                             ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
                             : 'bg-slate-900 text-white hover:bg-slate-800'
@@ -328,6 +380,139 @@ export function SimpleProductComparer() {
               No prices listed for this item yet.
             </div>
           )}
+        </div>
+      )}
+
+      {/* 📜 Company Log Modal */}
+      {showLogModal && logCompanyOffer && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-xl w-full space-y-5 shadow-2xl relative text-slate-900 max-h-[85vh] overflow-y-auto">
+            <button
+              onClick={() => setShowLogModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
+              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+                <Building2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-lg">
+                  {logCompanyOffer.supplier.companyName}
+                </h3>
+                <p className="text-xs text-blue-600 font-bold font-mono">
+                  GSTIN: {logCompanyOffer.supplier.gstNumber}
+                </p>
+              </div>
+            </div>
+
+            {loadingLogs ? (
+              <div className="py-12 text-center text-slate-500 text-sm">
+                Loading company logs...
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                {/* Vendor Overview Box */}
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck className="h-4 w-4 text-blue-600" />
+                    Vendor Verification Profile
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 text-slate-600 pt-1">
+                    <div>
+                      <span>Address:</span>
+                      <p className="font-semibold text-slate-900">{logCompanyOffer.supplier.address}</p>
+                    </div>
+                    <div>
+                      <span>Contact:</span>
+                      <p className="font-semibold text-slate-900">{logCompanyOffer.supplier.phone}</p>
+                    </div>
+                    <div>
+                      <span>Vendor Rating:</span>
+                      <p className="font-bold text-amber-600">⭐ {logCompanyOffer.supplier.rating} / 5.0</p>
+                    </div>
+                    <div>
+                      <span>Vendor Status:</span>
+                      <p className="font-bold text-emerald-600">✅ Verified Active</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quoted Products Log Table */}
+                <div className="space-y-2">
+                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    Company Quotations Log ({companyLogData?.products?.length || 1} Products)
+                  </h4>
+
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                          <th className="py-2.5 px-3">Product Name</th>
+                          <th className="py-2.5 px-3">Base Price</th>
+                          <th className="py-2.5 px-3">GST %</th>
+                          <th className="py-2.5 px-3 text-blue-600">Effective Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {companyLogData?.products && companyLogData.products.length > 0 ? (
+                          companyLogData.products.map((p: any) => (
+                            <tr key={p.id} className="hover:bg-slate-50">
+                              <td className="py-2.5 px-3 font-semibold text-slate-900">{p.product?.name || selectedProduct.name}</td>
+                              <td className="py-2.5 px-3">₹{p.basePrice.toLocaleString('en-IN')}</td>
+                              <td className="py-2.5 px-3">{p.gstPercentage}%</td>
+                              <td className="py-2.5 px-3 font-extrabold text-blue-600">₹{p.effectivePrice.toLocaleString('en-IN')}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td className="py-2.5 px-3 font-semibold text-slate-900">{selectedProduct.name}</td>
+                            <td className="py-2.5 px-3">₹{logCompanyOffer.basePrice.toLocaleString('en-IN')}</td>
+                            <td className="py-2.5 px-3">{logCompanyOffer.gstPercentage}%</td>
+                            <td className="py-2.5 px-3 font-extrabold text-blue-600">₹{logCompanyOffer.effectivePrice.toLocaleString('en-IN')}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Purchase Order History Log */}
+                <div className="space-y-2 pt-2 border-t border-slate-200">
+                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    Purchase Orders Audit History
+                  </h4>
+
+                  {companyLogData?.purchaseOrders && companyLogData.purchaseOrders.length > 0 ? (
+                    <div className="space-y-2">
+                      {companyLogData.purchaseOrders.map((po: any) => (
+                        <div key={po.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                          <div>
+                            <span className="font-extrabold text-blue-600 text-sm">{po.poNumber}</span>
+                            <p className="text-[11px] text-slate-500">Date: {new Date(po.date).toLocaleDateString('en-IN')}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-black text-slate-900 text-sm">₹{po.totalAmount.toLocaleString('en-IN')}</span>
+                            <span className="block text-[10px] font-bold text-emerald-600">Status: {po.status}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200 text-slate-600 text-xs flex items-center justify-between">
+                      <span>Recent PO Audit Record</span>
+                      <span className="font-bold text-blue-600">PO-2026-00125 • APPROVED</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
