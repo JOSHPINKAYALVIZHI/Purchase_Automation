@@ -1,0 +1,12 @@
+# dependencies
+/node_modules
+
+# sqlite database
+*.db
+*.db-journal
+
+# environment variables
+.env
+
+# logs
+*.log

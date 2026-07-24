@@ -1,0 +1,130 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  role        String   @default("PURCHASE_MANAGER") // ADMIN, PURCHASE_MANAGER, WAREHOUSE, FINANCE, SUPPLIER
+  department  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdOrders PurchaseOrder[]
+}
+
+model Supplier {
+  id          String   @id @default(uuid())
+  companyName String
+  gstNumber   String   @unique
+  phone       String
+  email       String
+  address     String
+  rating      Float    @default(4.0)
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products        SupplierProduct[]
+  purchaseOrders  PurchaseOrder[]
+  purchaseHistory PurchaseHistory[]
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  name         String
+  category     String
+  brand        String
+  specification String
+  hsn          String
+  unit         String
+  minimumStock Int      @default(10)
+  image        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  supplierProducts SupplierProduct[]
+  orderItems       PurchaseOrderItem[]
+  inventory        Inventory?
+  purchaseHistory  PurchaseHistory[]
+}
+
+model SupplierProduct {
+  id                   String   @id @default(uuid())
+  supplierId           String
+  productId            String
+  basePrice            Float
+  gstPercentage        Float
+  effectivePrice       Float
+  quotationDate        DateTime @default(now())
+  validUntil           DateTime
+  leadTime             Int
+  minimumOrderQuantity Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, productId])
+}
+
+model PurchaseOrder {
+  id          String   @id @default(uuid())
+  poNumber    String   @unique
+  supplierId  String
+  date        DateTime @default(now())
+  status      String   @default("PENDING")
+  createdById String
+  totalAmount Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier  Supplier            @relation(fields: [supplierId], references: [id])
+  createdBy User                @relation(fields: [createdById], references: [id])
+  items     PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id            String @id @default(uuid())
+  poId          String
+  productId     String
+  quantity      Int
+  unitPrice     Float
+  gstPercentage Float
+  total         Float
+
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+}
+
+model Inventory {
+  id        String   @id @default(uuid())
+  productId String   @unique
+  warehouse String   @default("Main Warehouse")
+  stock     Int      @default(0)
+  reserved  Int      @default(0)
+  available Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model PurchaseHistory {
+  id           String   @id @default(uuid())
+  productId    String
+  supplierId   String
+  quantity     Int
+  purchaseDate DateTime @default(now())
+  invoiceNo    String?
+  actualPrice  Float
+
+  product  Product  @relation(fields: [productId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+}
