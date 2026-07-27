@@ -4,11 +4,13 @@
   "description": "ProcureAI - Intelligent Procurement & Supplier Management System for Solar Manufacturing",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "powershell -Command \"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .next\"; next dev",
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .next\"",
     "build": "next build",
     "start": "next start",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:import": "tsx prisma/import_csv.ts",
     "db:studio": "prisma studio",
     "test:backend": "tsx scripts/test_backend.ts"
   },
