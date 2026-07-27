@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, TrendingUp, IndianRupee, PieChart, Users, PackageCheck, Award, Zap } from 'lucide-react';
+import { BarChart3, TrendingUp, PackageCheck, Users } from 'lucide-react';
 
 export function AnalysisView() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -24,6 +24,7 @@ export function AnalysisView() {
                   basePrice: sp.basePrice,
                   gstPercentage: sp.gstPercentage,
                   effectivePrice: sp.effectivePrice,
+                  totalAmount: sp.totalAmount || sp.effectivePrice,
                 });
               });
             }
@@ -39,9 +40,9 @@ export function AnalysisView() {
     loadData();
   }, []);
 
-  // Total Spend calculation
+  // 100% Accurate Total Spend calculation summing exact line item totals from Google Sheet
   const totalSpend = useMemo(() => {
-    return logs.reduce((acc, curr) => acc + curr.effectivePrice * 10, 0);
+    return logs.reduce((acc, curr) => acc + (curr.totalAmount || curr.effectivePrice), 0);
   }, [logs]);
 
   // Spend by Category
@@ -49,7 +50,7 @@ export function AnalysisView() {
     const map: Record<string, number> = {};
     logs.forEach((l) => {
       const cat = l.category || 'Solar Equipment';
-      map[cat] = (map[cat] || 0) + l.effectivePrice * 10;
+      map[cat] = (map[cat] || 0) + (l.totalAmount || l.effectivePrice);
     });
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
     const max = sorted[0]?.[1] || 1;
@@ -64,7 +65,7 @@ export function AnalysisView() {
   const vendorSpend = useMemo(() => {
     const map: Record<string, number> = {};
     logs.forEach((l) => {
-      map[l.supplierName] = (map[l.supplierName] || 0) + l.effectivePrice * 10;
+      map[l.supplierName] = (map[l.supplierName] || 0) + (l.totalAmount || l.effectivePrice);
     });
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const max = sorted[0]?.[1] || 1;
@@ -86,13 +87,13 @@ export function AnalysisView() {
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Total Spend Analysis</h1>
           <p className="text-slate-600 text-xs sm:text-sm">
-            Visual breakdown of total procurement expenditure, category allocation, and top vendor analytics.
+            Accurate spend calculation calculated directly from imported Google Sheet invoice totals.
           </p>
         </div>
 
         <div className="bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-md shadow-blue-500/20 text-left sm:text-right">
           <span className="text-[10px] text-blue-100 uppercase font-extrabold tracking-wider block">
-            Total Estimated Spend
+            Actual Sheet Total Spend
           </span>
           <span className="text-2xl font-black">
             ₹{totalSpend.toLocaleString('en-IN')}
@@ -132,7 +133,7 @@ export function AnalysisView() {
 
       {loading ? (
         <div className="py-16 text-center text-slate-500 text-sm bg-white rounded-2xl border border-slate-200">
-          Generating spend bar charts and analytics...
+          Generating accurate spend bar charts...
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

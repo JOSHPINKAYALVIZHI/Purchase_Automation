@@ -61,13 +61,19 @@ async function importSheetData() {
     const gstPctStr = (cols[12] || '18').replace(/[^0-9.]/g, '');
     const withGstStr = (cols[13] || '0').replace(/[^0-9.]/g, '');
     const discountRaw = cols[14] || '';
+    const totalStr = (cols[15] || '0').replace(/[^0-9.]/g, '');
 
     const basePrice = parseFloat(unitRateStr) || 0;
     const gstPercentage = parseFloat(gstPctStr) || 18;
     let effectivePrice = parseFloat(withGstStr) || 0;
+    let totalAmount = parseFloat(totalStr) || 0;
 
     if (effectivePrice === 0 && basePrice > 0) {
       effectivePrice = Number((basePrice * (1 + gstPercentage / 100)).toFixed(2));
+    }
+
+    if (totalAmount === 0 && effectivePrice > 0) {
+      totalAmount = effectivePrice;
     }
 
     if (!itemName || basePrice <= 0) continue;
@@ -122,7 +128,7 @@ async function importSheetData() {
       },
     });
 
-    // 3. Upsert Supplier Product (Quotation with Invoice No & Discount)
+    // 3. Upsert Supplier Product (Quotation with Invoice No, Discount, and Total Amount)
     await prisma.supplierProduct.upsert({
       where: {
         supplierId_productId: {
@@ -134,6 +140,7 @@ async function importSheetData() {
         basePrice,
         gstPercentage,
         effectivePrice,
+        totalAmount,
         discount,
         invoiceNo,
         quotationDate: new Date(),
@@ -147,6 +154,7 @@ async function importSheetData() {
         basePrice,
         gstPercentage,
         effectivePrice,
+        totalAmount,
         discount,
         invoiceNo,
         quotationDate: new Date(),
@@ -173,7 +181,7 @@ async function importSheetData() {
     importedCount++;
   }
 
-  console.log(`✅ Successfully imported ${importedCount} actual solar items with Invoice No and Discount Price into database!`);
+  console.log(`✅ Successfully imported ${importedCount} actual solar items into database!`);
 }
 
 function hashString(str: string): number {

@@ -62,6 +62,7 @@ model SupplierProduct {
   basePrice            Float
   gstPercentage        Float
   effectivePrice       Float
+  totalAmount          Float?
   discount             String?
   invoiceNo            String?
   quotationDate        DateTime @default(now())
