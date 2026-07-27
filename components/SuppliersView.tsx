@@ -1,12 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Users, ShieldCheck, Phone, Mail, MapPin, Star, Building2, ExternalLink } from 'lucide-react';
+import {
+  Search,
+  Users,
+  ShieldCheck,
+  Phone,
+  Mail,
+  MapPin,
+  Star,
+  Building2,
+  PackageCheck,
+  X,
+  Tag,
+  Receipt,
+  ChevronRight,
+  Zap,
+} from 'lucide-react';
 
 export function SuppliersView() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
+
+  // Selected Supplier Modal State
+  const [selectedSupplier, setSelectedSupplier] = useState<any | null>(null);
 
   useEffect(() => {
     async function loadSuppliers() {
@@ -50,7 +68,7 @@ export function SuppliersView() {
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Suppliers Directory</h1>
           <p className="text-slate-600 text-xs sm:text-sm">
-            Contact information, GSTIN verification, and addresses of all registered solar suppliers ({filteredSuppliers.length} Vendors)
+            Click on any company card to view all products supplied and their detailed pricing ({filteredSuppliers.length} Vendors)
           </p>
         </div>
 
@@ -77,16 +95,17 @@ export function SuppliersView() {
           {filteredSuppliers.map((supplier) => (
             <div
               key={supplier.id}
-              className="bg-white border border-slate-200 hover:border-blue-400 rounded-2xl p-5 shadow-sm transition space-y-3 flex flex-col justify-between"
+              onClick={() => setSelectedSupplier(supplier)}
+              className="bg-white border border-slate-200 hover:border-blue-500 rounded-2xl p-5 shadow-sm hover:shadow-md transition cursor-pointer space-y-3 flex flex-col justify-between group"
             >
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-extrabold text-sm shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-extrabold text-sm shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
                       <Building2 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm leading-tight">
+                      <h3 className="font-extrabold text-slate-900 text-sm leading-tight group-hover:text-blue-600 transition">
                         {supplier.companyName}
                       </h3>
                       <span className="text-[11px] font-mono text-blue-600 font-bold">
@@ -94,6 +113,8 @@ export function SuppliersView() {
                       </span>
                     </div>
                   </div>
+
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition shrink-0" />
                 </div>
 
                 <div className="space-y-1.5 pt-2 text-xs text-slate-600 border-t border-slate-100">
@@ -114,19 +135,140 @@ export function SuppliersView() {
                 </div>
               </div>
 
-              {/* Card Footer */}
+              {/* Card Footer: Products Count Badge */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-1 text-amber-600 font-bold">
                   <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  <span>{supplier.rating} / 5.0 Rating</span>
+                  <span>{supplier.rating} Rating</span>
                 </div>
 
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  ✅ Active Vendor
+                <span className="px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200 group-hover:bg-blue-600 group-hover:text-white transition flex items-center space-x-1">
+                  <PackageCheck className="h-3.5 w-3.5" />
+                  <span>{supplier.products?.length || 0} Products Supplied</span>
                 </span>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 🏬 SUPPLIER PRODUCTS & DETAILS MODAL */}
+      {selectedSupplier && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-3xl w-full space-y-5 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedSupplier(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal Supplier Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 rounded-2xl bg-blue-600 text-white shadow-md">
+                  <Building2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-black text-slate-900 text-xl">
+                      {selectedSupplier.companyName}
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      Verified Supplier
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 font-bold font-mono mt-0.5">
+                    GSTIN: {selectedSupplier.gstNumber} • {selectedSupplier.phone}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-left sm:text-right">
+                <span className="text-xs font-bold text-amber-600 block">
+                  ⭐ {selectedSupplier.rating} / 5.0 Vendor Rating
+                </span>
+                <span className="text-[11px] text-slate-500 block">
+                  {selectedSupplier.address}
+                </span>
+              </div>
+            </div>
+
+            {/* Products Supplied List Table */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                  <PackageCheck className="h-4.5 w-4.5 text-blue-600" />
+                  <span>Products We Get from {selectedSupplier.companyName} ({selectedSupplier.products?.length || 0} Items)</span>
+                </h4>
+                <span className="text-[11px] text-slate-500 font-semibold">
+                  Google Sheet Quotation Records
+                </span>
+              </div>
+
+              {selectedSupplier.products && selectedSupplier.products.length > 0 ? (
+                <div className="border border-slate-200 rounded-xl overflow-x-auto shadow-sm max-h-[55vh]">
+                  <table className="w-full text-left text-xs">
+                    <thead className="sticky top-0 bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px] z-10">
+                      <tr>
+                        <th className="py-3 px-3">Product Name</th>
+                        <th className="py-3 px-3">Category</th>
+                        <th className="py-3 px-3">Specification</th>
+                        <th className="py-3 px-3">Make / Brand</th>
+                        <th className="py-3 px-3">HSN Code</th>
+                        <th className="py-3 px-3">Invoice No</th>
+                        <th className="py-3 px-3">Base Rate</th>
+                        <th className="py-3 px-3">GST %</th>
+                        <th className="py-3 px-3 text-blue-600">With GST Rate</th>
+                        <th className="py-3 px-3 text-emerald-700">Discount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-[11px]">
+                      {selectedSupplier.products.map((sp: any) => (
+                        <tr key={sp.id} className="hover:bg-slate-50 transition">
+                          <td className="py-3 px-3 font-extrabold text-slate-900 flex items-center space-x-1.5">
+                            <Zap className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                            <span>{sp.product?.name || 'Solar Material'}</span>
+                          </td>
+                          <td className="py-3 px-3 font-semibold text-slate-700">
+                            {sp.product?.category || 'Solar Equipment'}
+                          </td>
+                          <td className="py-3 px-3 text-slate-600">
+                            {sp.product?.specification || 'Standard Spec'}
+                          </td>
+                          <td className="py-3 px-3 font-bold text-slate-800">
+                            {sp.product?.brand || 'Standard'}
+                          </td>
+                          <td className="py-3 px-3 font-mono text-slate-600">
+                            {sp.product?.hsn || '8541'}
+                          </td>
+                          <td className="py-3 px-3 font-mono font-bold text-blue-600">
+                            {sp.invoiceNo || 'FSCH/00139/25-26'}
+                          </td>
+                          <td className="py-3 px-3 font-semibold text-slate-900">
+                            ₹{sp.basePrice.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-3 px-3 text-slate-600">
+                            {sp.gstPercentage}%
+                          </td>
+                          <td className="py-3 px-3 font-black text-blue-600">
+                            ₹{sp.effectivePrice.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-3 px-3 font-bold text-emerald-600">
+                            {sp.discount || '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-500 text-xs bg-slate-50 rounded-xl border border-slate-200">
+                  No registered product quotes found for this supplier yet.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
