@@ -92,7 +92,7 @@ async function importSheetData() {
         companyName: cleanVendorName,
         gstNumber: cleanGst,
         phone: '+91 98422 ' + String(Math.floor(10000 + Math.random() * 90000)),
-        email: `sales@${cleanVendorName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
+        email: null,
         address: address.trim(),
         rating: Number((4.0 + (hashString(cleanVendorName) % 10) / 10).toFixed(1)),
         status: 'ACTIVE',

@@ -12,8 +12,6 @@ import {
   Building2,
   PackageCheck,
   X,
-  Tag,
-  Receipt,
   ChevronRight,
   Zap,
 } from 'lucide-react';
@@ -53,7 +51,7 @@ export function SuppliersView() {
         s.gstNumber.toLowerCase().includes(term) ||
         s.address.toLowerCase().includes(term) ||
         s.phone.toLowerCase().includes(term) ||
-        s.email.toLowerCase().includes(term)
+        (s.email && s.email.toLowerCase().includes(term))
     );
   }, [suppliers, search]);
 
@@ -123,10 +121,13 @@ export function SuppliersView() {
                     <span className="font-semibold text-slate-800">{supplier.phone}</span>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Mail className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                    <span className="text-slate-600 truncate">{supplier.email}</span>
-                  </div>
+                  {/* Render Email ONLY if available */}
+                  {supplier.email && supplier.email.trim() && (
+                    <div className="flex items-center space-x-2">
+                      <Mail className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                      <span className="text-slate-600 truncate">{supplier.email}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-start space-x-2">
                     <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0 mt-0.5" />
@@ -180,6 +181,7 @@ export function SuppliersView() {
                   </div>
                   <p className="text-xs text-blue-600 font-bold font-mono mt-0.5">
                     GSTIN: {selectedSupplier.gstNumber} • {selectedSupplier.phone}
+                    {selectedSupplier.email && selectedSupplier.email.trim() ? ` • ${selectedSupplier.email}` : ''}
                   </p>
                 </div>
               </div>

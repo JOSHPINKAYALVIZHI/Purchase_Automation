@@ -24,7 +24,7 @@ model Supplier {
   companyName String
   gstNumber   String   @unique
   phone       String
-  email       String
+  email       String?
   address     String
   rating      Float    @default(4.0)
   status      String   @default("ACTIVE")
