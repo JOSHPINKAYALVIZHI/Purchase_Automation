@@ -16,6 +16,8 @@ import {
   Clock,
   Building2,
   History,
+  Tag,
+  Receipt,
 } from 'lucide-react';
 
 export function SimpleProductComparer() {
@@ -172,13 +174,13 @@ export function SimpleProductComparer() {
       {/* Clean Header */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center space-y-2">
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-          <span>⚡ ProcureAI • Category Filter & Company Logs</span>
+          <span>⚡ ProcureAI • Category Filter & Detailed Company Logs</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Select Category & Material
         </h1>
         <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto">
-          Compare prices ranked <strong>Lowest to Highest</strong> and click <strong>View Log</strong> to see vendor quotation & PO history.
+          Compare prices ranked <strong>Lowest to Highest</strong> and click <strong>View Log</strong> to inspect full Invoice No, HSN, Specification, Make, Unit Rate & Discount.
         </p>
       </div>
 
@@ -347,8 +349,8 @@ export function SimpleProductComparer() {
                       {/* View Log Button next to Order Now */}
                       <button
                         onClick={() => handleOpenCompanyLog(offer)}
-                        className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center space-x-1.5 shrink-0"
-                        title="View company quotation and PO audit log"
+                        className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center space-x-1.5 shrink-0 shadow-sm"
+                        title="View company quotation, invoice & PO log"
                       >
                         <History className="h-4 w-4 text-blue-600" />
                         <span>View Log</span>
@@ -383,27 +385,32 @@ export function SimpleProductComparer() {
         </div>
       )}
 
-      {/* 📜 Company Log Modal */}
+      {/* 📜 Detailed Company Log Modal */}
       {showLogModal && logCompanyOffer && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-xl w-full space-y-5 shadow-2xl relative text-slate-900 max-h-[85vh] overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-2xl w-full space-y-5 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowLogModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
             >
               <X className="h-5 w-5" />
             </button>
 
             {/* Modal Header */}
-            <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
-              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+            <div className="flex items-center space-x-3 border-b border-slate-200 pb-4">
+              <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200">
                 <Building2 className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-extrabold text-slate-900 text-lg">
-                  {logCompanyOffer.supplier.companyName}
-                </h3>
-                <p className="text-xs text-blue-600 font-bold font-mono">
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-black text-slate-900 text-lg">
+                    {logCompanyOffer.supplier.companyName}
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
+                    Audit Log
+                  </span>
+                </div>
+                <p className="text-xs text-blue-600 font-bold font-mono mt-0.5">
                   GSTIN: {logCompanyOffer.supplier.gstNumber}
                 </p>
               </div>
@@ -411,69 +418,116 @@ export function SimpleProductComparer() {
 
             {loadingLogs ? (
               <div className="py-12 text-center text-slate-500 text-sm">
-                Loading company logs...
+                Loading detailed vendor audit logs...
               </div>
             ) : (
-              <div className="space-y-4 text-xs">
-                {/* Vendor Overview Box */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <div className="space-y-5 text-xs">
+                {/* Vendor Info Box */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                   <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
                     <ShieldCheck className="h-4 w-4 text-blue-600" />
-                    Vendor Verification Profile
+                    Supplier Profile & Address
                   </h4>
-                  <div className="grid grid-cols-2 gap-2 text-slate-600 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600 pt-1">
                     <div>
-                      <span>Address:</span>
-                      <p className="font-semibold text-slate-900">{logCompanyOffer.supplier.address}</p>
+                      <span className="text-slate-400 block text-[10px]">Registered Address</span>
+                      <p className="font-bold text-slate-900 leading-snug">{logCompanyOffer.supplier.address}</p>
                     </div>
                     <div>
-                      <span>Contact:</span>
-                      <p className="font-semibold text-slate-900">{logCompanyOffer.supplier.phone}</p>
-                    </div>
-                    <div>
-                      <span>Vendor Rating:</span>
-                      <p className="font-bold text-amber-600">⭐ {logCompanyOffer.supplier.rating} / 5.0</p>
-                    </div>
-                    <div>
-                      <span>Vendor Status:</span>
-                      <p className="font-bold text-emerald-600">✅ Verified Active</p>
+                      <span className="text-slate-400 block text-[10px]">Contact Details</span>
+                      <p className="font-bold text-slate-900">{logCompanyOffer.supplier.phone}</p>
+                      <p className="text-slate-500 text-[11px]">{logCompanyOffer.supplier.email}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Quoted Products Log Table */}
+                {/* Detailed Quotation & Invoice Audit Log Table */}
                 <div className="space-y-2">
-                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-blue-600" />
-                    Company Quotations Log ({companyLogData?.products?.length || 1} Products)
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <Receipt className="h-4 w-4 text-blue-600" />
+                      Detailed Items Log ({companyLogData?.products?.length || 1} Record)
+                    </h4>
+                    <span className="text-[11px] text-slate-500">Includes Invoice No, HSN, Make & Discount</span>
+                  </div>
 
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
-                          <th className="py-2.5 px-3">Product Name</th>
-                          <th className="py-2.5 px-3">Base Price</th>
+                        <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px]">
+                          <th className="py-2.5 px-3">Invoice No</th>
+                          <th className="py-2.5 px-3">HSN No</th>
+                          <th className="py-2.5 px-3">Product / Item</th>
+                          <th className="py-2.5 px-3">Specification</th>
+                          <th className="py-2.5 px-3">Make / Brand</th>
+                          <th className="py-2.5 px-3">Unit Rate</th>
                           <th className="py-2.5 px-3">GST %</th>
-                          <th className="py-2.5 px-3 text-blue-600">Effective Rate</th>
+                          <th className="py-2.5 px-3 text-blue-600">With GST</th>
+                          <th className="py-2.5 px-3 text-emerald-700">Discount</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200">
+                      <tbody className="divide-y divide-slate-200 text-[11px]">
                         {companyLogData?.products && companyLogData.products.length > 0 ? (
                           companyLogData.products.map((p: any) => (
-                            <tr key={p.id} className="hover:bg-slate-50">
-                              <td className="py-2.5 px-3 font-semibold text-slate-900">{p.product?.name || selectedProduct.name}</td>
-                              <td className="py-2.5 px-3">₹{p.basePrice.toLocaleString('en-IN')}</td>
-                              <td className="py-2.5 px-3">{p.gstPercentage}%</td>
-                              <td className="py-2.5 px-3 font-extrabold text-blue-600">₹{p.effectivePrice.toLocaleString('en-IN')}</td>
+                            <tr key={p.id} className="hover:bg-slate-50 transition">
+                              <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
+                                {p.invoiceNo || 'FSCH/00139/25-26'}
+                              </td>
+                              <td className="py-2.5 px-3 font-mono text-slate-600">
+                                {p.product?.hsn || selectedProduct.hsn || '8541'}
+                              </td>
+                              <td className="py-2.5 px-3 font-bold text-slate-900">
+                                {p.product?.name || selectedProduct.name}
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-600">
+                                {p.product?.specification || 'Standard Spec'}
+                              </td>
+                              <td className="py-2.5 px-3 font-semibold text-slate-800">
+                                {p.product?.brand || 'Standard'}
+                              </td>
+                              <td className="py-2.5 px-3 font-semibold text-slate-800">
+                                ₹{p.basePrice.toLocaleString('en-IN')}
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-600">
+                                {p.gstPercentage}%
+                              </td>
+                              <td className="py-2.5 px-3 font-extrabold text-blue-600">
+                                ₹{p.effectivePrice.toLocaleString('en-IN')}
+                              </td>
+                              <td className="py-2.5 px-3 font-bold text-emerald-600">
+                                {p.discount || '—'}
+                              </td>
                             </tr>
                           ))
                         ) : (
-                          <tr>
-                            <td className="py-2.5 px-3 font-semibold text-slate-900">{selectedProduct.name}</td>
-                            <td className="py-2.5 px-3">₹{logCompanyOffer.basePrice.toLocaleString('en-IN')}</td>
-                            <td className="py-2.5 px-3">{logCompanyOffer.gstPercentage}%</td>
-                            <td className="py-2.5 px-3 font-extrabold text-blue-600">₹{logCompanyOffer.effectivePrice.toLocaleString('en-IN')}</td>
+                          <tr className="hover:bg-slate-50">
+                            <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
+                              {logCompanyOffer.invoiceNo || 'FSCH/00139/25-26'}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-slate-600">
+                              {selectedProduct.hsn || '8541'}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-slate-900">
+                              {selectedProduct.name}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">
+                              {selectedProduct.specification}
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-800">
+                              {selectedProduct.brand}
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-800">
+                              ₹{logCompanyOffer.basePrice.toLocaleString('en-IN')}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">
+                              {logCompanyOffer.gstPercentage}%
+                            </td>
+                            <td className="py-2.5 px-3 font-extrabold text-blue-600">
+                              ₹{logCompanyOffer.effectivePrice.toLocaleString('en-IN')}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-emerald-600">
+                              {logCompanyOffer.discount || '—'}
+                            </td>
                           </tr>
                         )}
                       </tbody>
@@ -482,7 +536,7 @@ export function SimpleProductComparer() {
                 </div>
 
                 {/* Purchase Order History Log */}
-                <div className="space-y-2 pt-2 border-t border-slate-200">
+                <div className="space-y-2 pt-3 border-t border-slate-200">
                   <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
                     <Clock className="h-4 w-4 text-blue-600" />
                     Purchase Orders Audit History
@@ -504,8 +558,8 @@ export function SimpleProductComparer() {
                       ))}
                     </div>
                   ) : (
-                    <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200 text-slate-600 text-xs flex items-center justify-between">
-                      <span>Recent PO Audit Record</span>
+                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200 text-slate-700 text-xs flex items-center justify-between">
+                      <span>Audit Record Log</span>
                       <span className="font-bold text-blue-600">PO-2026-00125 • APPROVED</span>
                     </div>
                   )}

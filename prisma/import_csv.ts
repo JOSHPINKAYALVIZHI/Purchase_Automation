@@ -36,7 +36,7 @@ async function importSheetData() {
   const content = fs.readFileSync(csvPath, 'utf-8');
   const lines = content.split('\n').filter((l) => l.trim().length > 0);
 
-  // Skip header lines (Line 1: "Vendor List...", Line 2: "Category,KW,Vendor name...")
+  // Skip header lines
   const dataLines = lines.slice(2);
 
   let importedCount = 0;
@@ -50,7 +50,7 @@ async function importSheetData() {
     const vendorName = cols[2] || '';
     const address = cols[3] || 'Coimbatore, Tamil Nadu';
     const dateStr = cols[4] || '';
-    const invoiceNo = cols[5] || '';
+    const invoiceNoRaw = cols[5] || '';
     const hsnNo = cols[6] || '8541';
     const itemName = cols[7] || '';
     const spec = cols[8] || '';
@@ -60,6 +60,7 @@ async function importSheetData() {
     const unitRateStr = (cols[11] || '0').replace(/[^0-9.]/g, '');
     const gstPctStr = (cols[12] || '18').replace(/[^0-9.]/g, '');
     const withGstStr = (cols[13] || '0').replace(/[^0-9.]/g, '');
+    const discountRaw = cols[14] || '';
 
     const basePrice = parseFloat(unitRateStr) || 0;
     const gstPercentage = parseFloat(gstPctStr) || 18;
@@ -75,8 +76,9 @@ async function importSheetData() {
     const brand = makeBrand.trim() || 'Standard Solar';
     const fullName = kw ? `${itemName.trim()} (${kw})` : itemName.trim();
     const cleanVendorName = vendorName.trim() || 'Local Solar Vendor';
+    const invoiceNo = invoiceNoRaw.trim() || null;
+    const discount = discountRaw.trim() || null;
 
-    // Generate a deterministic GST number if not provided in sheet
     const cleanGst = `33AAACG${Math.abs(hashString(cleanVendorName)).toString().padStart(6, '0')}1Z5`;
 
     // 1. Upsert Supplier
@@ -120,7 +122,7 @@ async function importSheetData() {
       },
     });
 
-    // 3. Upsert Supplier Product (Quotation)
+    // 3. Upsert Supplier Product (Quotation with Invoice No & Discount)
     await prisma.supplierProduct.upsert({
       where: {
         supplierId_productId: {
@@ -132,9 +134,11 @@ async function importSheetData() {
         basePrice,
         gstPercentage,
         effectivePrice,
+        discount,
+        invoiceNo,
         quotationDate: new Date(),
         validUntil: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-        leadTime: Math.floor(1 + Math.random() * 5), // 1 to 5 days lead time
+        leadTime: Math.floor(1 + Math.random() * 5),
         minimumOrderQuantity: 1,
       },
       create: {
@@ -143,6 +147,8 @@ async function importSheetData() {
         basePrice,
         gstPercentage,
         effectivePrice,
+        discount,
+        invoiceNo,
         quotationDate: new Date(),
         validUntil: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
         leadTime: Math.floor(1 + Math.random() * 5),
@@ -167,7 +173,7 @@ async function importSheetData() {
     importedCount++;
   }
 
-  console.log(`✅ Successfully imported ${importedCount} actual solar procurement items from Google Sheet!`);
+  console.log(`✅ Successfully imported ${importedCount} actual solar items with Invoice No and Discount Price into database!`);
 }
 
 function hashString(str: string): number {
