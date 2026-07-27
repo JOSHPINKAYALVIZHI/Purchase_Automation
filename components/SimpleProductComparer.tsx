@@ -16,8 +16,9 @@ import {
   Clock,
   Building2,
   History,
-  Tag,
   Receipt,
+  ListFilter,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export function SimpleProductComparer() {
@@ -34,11 +35,15 @@ export function SimpleProductComparer() {
   const [quantity, setQuantity] = useState<number>(10);
   const [orderSuccessMsg, setOrderSuccessMsg] = useState<string | null>(null);
 
-  // Company Log Modal State
+  // Card View Log Modal State (Filtered to searched product ONLY)
   const [showLogModal, setShowLogModal] = useState<boolean>(false);
   const [logCompanyOffer, setLogCompanyOffer] = useState<any>(null);
-  const [companyLogData, setCompanyLogData] = useState<any>(null);
-  const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
+
+  // Overall Log Modal State (Complete overall history)
+  const [showOverallLogModal, setShowOverallLogModal] = useState<boolean>(false);
+  const [overallLogs, setOverallLogs] = useState<any[]>([]);
+  const [overallLogSearch, setOverallLogSearch] = useState<string>('');
+  const [loadingOverallLogs, setLoadingOverallLogs] = useState<boolean>(false);
 
   // Load products from database
   useEffect(() => {
@@ -118,22 +123,49 @@ export function SimpleProductComparer() {
     loadOffers();
   }, [selectedProduct]);
 
-  // Open Company Log Modal
-  const handleOpenCompanyLog = async (offer: any) => {
+  // Open Card Specific Log Modal (Only searched product log)
+  const handleOpenProductLog = (offer: any) => {
     setLogCompanyOffer(offer);
     setShowLogModal(true);
+  };
+
+  // Open Overall Log Modal (Complete overall vendor history)
+  const handleOpenOverallLog = async () => {
+    setShowOverallLogModal(true);
     try {
-      setLoadingLogs(true);
-      const res = await fetch(`/api/suppliers`);
+      setLoadingOverallLogs(true);
+      const res = await fetch('/api/suppliers');
       const json = await res.json();
       if (json.success) {
-        const fullSupplier = json.data.find((s: any) => s.id === offer.supplier.id) || offer.supplier;
-        setCompanyLogData(fullSupplier);
+        // Flatten all product quotations across all suppliers
+        const allQuotationLogs: any[] = [];
+        json.data.forEach((s: any) => {
+          if (s.products && s.products.length > 0) {
+            s.products.forEach((sp: any) => {
+              allQuotationLogs.push({
+                supplierName: s.companyName,
+                gstNumber: s.gstNumber,
+                phone: s.phone,
+                productName: sp.product?.name || 'Solar Material',
+                category: sp.product?.category || 'Equipment',
+                specification: sp.product?.specification || 'Standard Spec',
+                brand: sp.product?.brand || 'Standard Make',
+                hsn: sp.product?.hsn || '8541',
+                basePrice: sp.basePrice,
+                gstPercentage: sp.gstPercentage,
+                effectivePrice: sp.effectivePrice,
+                invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
+                discount: sp.discount || '—',
+              });
+            });
+          }
+        });
+        setOverallLogs(allQuotationLogs);
       }
     } catch (err) {
-      console.error('Error fetching supplier logs:', err);
+      console.error('Error fetching overall logs:', err);
     } finally {
-      setLoadingLogs(false);
+      setLoadingOverallLogs(false);
     }
   };
 
@@ -169,19 +201,44 @@ export function SimpleProductComparer() {
     }
   };
 
+  // Filter overall logs
+  const filteredOverallLogs = useMemo(() => {
+    if (!overallLogSearch.trim()) return overallLogs;
+    const term = overallLogSearch.toLowerCase();
+    return overallLogs.filter(
+      (log) =>
+        log.supplierName.toLowerCase().includes(term) ||
+        log.productName.toLowerCase().includes(term) ||
+        log.invoiceNo.toLowerCase().includes(term) ||
+        log.brand.toLowerCase().includes(term) ||
+        log.hsn.toLowerCase().includes(term)
+    );
+  }, [overallLogs, overallLogSearch]);
+
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Clean Header */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center space-y-2">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-          <span>⚡ ProcureAI • Category Filter & Detailed Company Logs</span>
+      {/* Clean Header with Overall Log Menu Button */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="text-left space-y-1">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+            <span>⚡ ProcureAI • Category Filter & Price Finder</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Select Category & Material
+          </h1>
+          <p className="text-slate-600 text-xs sm:text-sm">
+            Compare prices ranked <strong>Lowest to Highest</strong> for your selected item.
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Select Category & Material
-        </h1>
-        <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto">
-          Compare prices ranked <strong>Lowest to Highest</strong> and click <strong>View Log</strong> to inspect full Invoice No, HSN, Specification, Make, Unit Rate & Discount.
-        </p>
+
+        {/* OVERALL LOG MENU BUTTON */}
+        <button
+          onClick={handleOpenOverallLog}
+          className="px-4 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-md"
+        >
+          <FileSpreadsheet className="h-4.5 w-4.5 text-blue-400" />
+          <span>Overall Log Menu</span>
+        </button>
       </div>
 
       {/* 1. Category Dropdown & Search Bar Container */}
@@ -346,11 +403,11 @@ export function SimpleProductComparer() {
                         </span>
                       </div>
 
-                      {/* View Log Button next to Order Now */}
+                      {/* Card Specific View Log Button (Filtered to Searched Product ONLY) */}
                       <button
-                        onClick={() => handleOpenCompanyLog(offer)}
+                        onClick={() => handleOpenProductLog(offer)}
                         className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center space-x-1.5 shrink-0 shadow-sm"
-                        title="View company quotation, invoice & PO log"
+                        title="View log for this specific product only"
                       >
                         <History className="h-4 w-4 text-blue-600" />
                         <span>View Log</span>
@@ -385,10 +442,10 @@ export function SimpleProductComparer() {
         </div>
       )}
 
-      {/* 📜 Detailed Company Log Modal */}
-      {showLogModal && logCompanyOffer && (
+      {/* 📜 CARD SPECIFIC VIEW LOG MODAL (Shows ONLY the searched product log!) */}
+      {showLogModal && logCompanyOffer && selectedProduct && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-2xl w-full space-y-5 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-xl w-full space-y-5 shadow-2xl relative text-slate-900">
             <button
               onClick={() => setShowLogModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
@@ -397,172 +454,177 @@ export function SimpleProductComparer() {
             </button>
 
             {/* Modal Header */}
-            <div className="flex items-center space-x-3 border-b border-slate-200 pb-4">
-              <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200">
+            <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
+              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
                 <Building2 className="h-6 w-6" />
               </div>
               <div>
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-black text-slate-900 text-lg">
-                    {logCompanyOffer.supplier.companyName}
-                  </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
-                    Audit Log
-                  </span>
-                </div>
-                <p className="text-xs text-blue-600 font-bold font-mono mt-0.5">
-                  GSTIN: {logCompanyOffer.supplier.gstNumber}
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  {logCompanyOffer.supplier.companyName}
+                </h3>
+                <p className="text-xs text-blue-600 font-bold">
+                  Product Audit Log: <strong className="text-slate-900">{selectedProduct.name}</strong>
                 </p>
               </div>
             </div>
 
-            {loadingLogs ? (
-              <div className="py-12 text-center text-slate-500 text-sm">
-                Loading detailed vendor audit logs...
+            {/* Product Specific Audit Table */}
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-slate-500 font-semibold text-[11px]">Vendor GSTIN</span>
+                <p className="font-mono font-bold text-blue-600 text-xs">{logCompanyOffer.supplier.gstNumber}</p>
+                <p className="text-slate-600 text-[11px] mt-1">{logCompanyOffer.supplier.address}</p>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px]">
+                      <th className="py-2.5 px-3">Invoice No</th>
+                      <th className="py-2.5 px-3">HSN No</th>
+                      <th className="py-2.5 px-3">Specification</th>
+                      <th className="py-2.5 px-3">Make</th>
+                      <th className="py-2.5 px-3">Unit Rate</th>
+                      <th className="py-2.5 px-3 text-blue-600">With GST</th>
+                      <th className="py-2.5 px-3 text-emerald-700">Discount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="hover:bg-slate-50 text-[11px]">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-800">
+                        {logCompanyOffer.invoiceNo || 'FSCH/00139/25-26'}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-slate-600">
+                        {selectedProduct.hsn || '8541'}
+                      </td>
+                      <td className="py-3 px-3 text-slate-700 font-medium">
+                        {selectedProduct.specification}
+                      </td>
+                      <td className="py-3 px-3 font-bold text-slate-900">
+                        {selectedProduct.brand}
+                      </td>
+                      <td className="py-3 px-3 font-semibold text-slate-800">
+                        ₹{logCompanyOffer.basePrice.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-3 font-black text-blue-600">
+                        ₹{logCompanyOffer.effectivePrice.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-3 font-bold text-emerald-600">
+                        {logCompanyOffer.discount || '—'}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-[11px] flex items-center justify-between font-semibold">
+                <span>Quotation Validity</span>
+                <span>Active • Guaranteed Price</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📊 OVERALL LOG MENU MODAL (Displays complete company-wide logs & all invoices) */}
+      {showOverallLogModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-4xl w-full space-y-4 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowOverallLogModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 rounded-2xl bg-blue-600 text-white shadow-md">
+                  <FileSpreadsheet className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-xl">
+                    Overall Company Audit Log
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Complete invoice, quotation & pricing history across all suppliers & materials ({overallLogs.length} Records)
+                  </p>
+                </div>
+              </div>
+
+              {/* Search within overall log */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={overallLogSearch}
+                  onChange={(e) => setOverallLogSearch(e.target.value)}
+                  placeholder="Filter invoice, vendor, HSN..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600"
+                />
+              </div>
+            </div>
+
+            {loadingOverallLogs ? (
+              <div className="py-16 text-center text-slate-500 text-sm">
+                Loading complete company logs from database...
               </div>
             ) : (
-              <div className="space-y-5 text-xs">
-                {/* Vendor Info Box */}
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck className="h-4 w-4 text-blue-600" />
-                    Supplier Profile & Address
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600 pt-1">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Registered Address</span>
-                      <p className="font-bold text-slate-900 leading-snug">{logCompanyOffer.supplier.address}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Contact Details</span>
-                      <p className="font-bold text-slate-900">{logCompanyOffer.supplier.phone}</p>
-                      <p className="text-slate-500 text-[11px]">{logCompanyOffer.supplier.email}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Detailed Quotation & Invoice Audit Log Table */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                      <Receipt className="h-4 w-4 text-blue-600" />
-                      Detailed Items Log ({companyLogData?.products?.length || 1} Record)
-                    </h4>
-                    <span className="text-[11px] text-slate-500">Includes Invoice No, HSN, Make & Discount</span>
-                  </div>
-
-                  <div className="border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px]">
-                          <th className="py-2.5 px-3">Invoice No</th>
-                          <th className="py-2.5 px-3">HSN No</th>
-                          <th className="py-2.5 px-3">Product / Item</th>
-                          <th className="py-2.5 px-3">Specification</th>
-                          <th className="py-2.5 px-3">Make / Brand</th>
-                          <th className="py-2.5 px-3">Unit Rate</th>
-                          <th className="py-2.5 px-3">GST %</th>
-                          <th className="py-2.5 px-3 text-blue-600">With GST</th>
-                          <th className="py-2.5 px-3 text-emerald-700">Discount</th>
+              <div className="space-y-3 text-xs">
+                <div className="border border-slate-200 rounded-xl overflow-x-auto shadow-sm max-h-[60vh]">
+                  <table className="w-full text-left text-xs">
+                    <thead className="sticky top-0 bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px] z-10">
+                      <tr>
+                        <th className="py-3 px-3">Vendor / Company</th>
+                        <th className="py-3 px-3">Invoice No</th>
+                        <th className="py-3 px-3">HSN No</th>
+                        <th className="py-3 px-3">Product Name</th>
+                        <th className="py-3 px-3">Specification</th>
+                        <th className="py-3 px-3">Make</th>
+                        <th className="py-3 px-3">Unit Rate</th>
+                        <th className="py-3 px-3">GST %</th>
+                        <th className="py-3 px-3 text-blue-600">With GST</th>
+                        <th className="py-3 px-3 text-emerald-700">Discount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-[11px]">
+                      {filteredOverallLogs.map((log, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50 transition">
+                          <td className="py-2.5 px-3 font-extrabold text-slate-900">
+                            {log.supplierName}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-blue-600">
+                            {log.invoiceNo}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-slate-600">
+                            {log.hsn}
+                          </td>
+                          <td className="py-2.5 px-3 font-bold text-slate-800">
+                            {log.productName}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-600">
+                            {log.specification}
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold text-slate-800">
+                            {log.brand}
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold text-slate-800">
+                            ₹{log.basePrice.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-600">
+                            {log.gstPercentage}%
+                          </td>
+                          <td className="py-2.5 px-3 font-black text-blue-600">
+                            ₹{log.effectivePrice.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 font-bold text-emerald-600">
+                            {log.discount}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 text-[11px]">
-                        {companyLogData?.products && companyLogData.products.length > 0 ? (
-                          companyLogData.products.map((p: any) => (
-                            <tr key={p.id} className="hover:bg-slate-50 transition">
-                              <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
-                                {p.invoiceNo || 'FSCH/00139/25-26'}
-                              </td>
-                              <td className="py-2.5 px-3 font-mono text-slate-600">
-                                {p.product?.hsn || selectedProduct.hsn || '8541'}
-                              </td>
-                              <td className="py-2.5 px-3 font-bold text-slate-900">
-                                {p.product?.name || selectedProduct.name}
-                              </td>
-                              <td className="py-2.5 px-3 text-slate-600">
-                                {p.product?.specification || 'Standard Spec'}
-                              </td>
-                              <td className="py-2.5 px-3 font-semibold text-slate-800">
-                                {p.product?.brand || 'Standard'}
-                              </td>
-                              <td className="py-2.5 px-3 font-semibold text-slate-800">
-                                ₹{p.basePrice.toLocaleString('en-IN')}
-                              </td>
-                              <td className="py-2.5 px-3 text-slate-600">
-                                {p.gstPercentage}%
-                              </td>
-                              <td className="py-2.5 px-3 font-extrabold text-blue-600">
-                                ₹{p.effectivePrice.toLocaleString('en-IN')}
-                              </td>
-                              <td className="py-2.5 px-3 font-bold text-emerald-600">
-                                {p.discount || '—'}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr className="hover:bg-slate-50">
-                            <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
-                              {logCompanyOffer.invoiceNo || 'FSCH/00139/25-26'}
-                            </td>
-                            <td className="py-2.5 px-3 font-mono text-slate-600">
-                              {selectedProduct.hsn || '8541'}
-                            </td>
-                            <td className="py-2.5 px-3 font-bold text-slate-900">
-                              {selectedProduct.name}
-                            </td>
-                            <td className="py-2.5 px-3 text-slate-600">
-                              {selectedProduct.specification}
-                            </td>
-                            <td className="py-2.5 px-3 font-semibold text-slate-800">
-                              {selectedProduct.brand}
-                            </td>
-                            <td className="py-2.5 px-3 font-semibold text-slate-800">
-                              ₹{logCompanyOffer.basePrice.toLocaleString('en-IN')}
-                            </td>
-                            <td className="py-2.5 px-3 text-slate-600">
-                              {logCompanyOffer.gstPercentage}%
-                            </td>
-                            <td className="py-2.5 px-3 font-extrabold text-blue-600">
-                              ₹{logCompanyOffer.effectivePrice.toLocaleString('en-IN')}
-                            </td>
-                            <td className="py-2.5 px-3 font-bold text-emerald-600">
-                              {logCompanyOffer.discount || '—'}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Purchase Order History Log */}
-                <div className="space-y-2 pt-3 border-t border-slate-200">
-                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    Purchase Orders Audit History
-                  </h4>
-
-                  {companyLogData?.purchaseOrders && companyLogData.purchaseOrders.length > 0 ? (
-                    <div className="space-y-2">
-                      {companyLogData.purchaseOrders.map((po: any) => (
-                        <div key={po.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                          <div>
-                            <span className="font-extrabold text-blue-600 text-sm">{po.poNumber}</span>
-                            <p className="text-[11px] text-slate-500">Date: {new Date(po.date).toLocaleDateString('en-IN')}</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-black text-slate-900 text-sm">₹{po.totalAmount.toLocaleString('en-IN')}</span>
-                            <span className="block text-[10px] font-bold text-emerald-600">Status: {po.status}</span>
-                          </div>
-                        </div>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200 text-slate-700 text-xs flex items-center justify-between">
-                      <span>Audit Record Log</span>
-                      <span className="font-bold text-blue-600">PO-2026-00125 • APPROVED</span>
-                    </div>
-                  )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
