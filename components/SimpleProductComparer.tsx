@@ -6,20 +6,35 @@ import {
   Zap,
   Trophy,
   ShieldCheck,
-  ShoppingBag,
+  ShoppingCart,
   Truck,
   Star,
   CheckCircle2,
   X,
   Filter,
-  FileText,
-  Clock,
-  Building2,
   History,
-  Receipt,
-  ListFilter,
-  FileSpreadsheet,
+  Edit2,
+  Trash2,
+  HelpCircle,
+  Plus,
+  Minus,
+  Check,
 } from 'lucide-react';
+
+interface CartItem {
+  id: string;
+  productId: string;
+  productName: string;
+  unit: string;
+  supplierId: string;
+  supplierName: string;
+  basePrice: number;
+  gstPercentage: number;
+  effectivePrice: number;
+  quantity: number;
+  leadTime: number;
+  invoiceNo: string;
+}
 
 export function SimpleProductComparer() {
   const [products, setProducts] = useState<any[]>([]);
@@ -29,21 +44,21 @@ export function SimpleProductComparer() {
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
 
-  // Order Modal State
-  const [showPOModal, setShowPOModal] = useState<boolean>(false);
-  const [selectedOffer, setSelectedOffer] = useState<any>(null);
-  const [quantity, setQuantity] = useState<number>(10);
+  // Cart State
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showCartDrawer, setShowCartDrawer] = useState<boolean>(false);
   const [orderSuccessMsg, setOrderSuccessMsg] = useState<string | null>(null);
 
   // Card View Log Modal State (Filtered to searched product ONLY)
   const [showLogModal, setShowLogModal] = useState<boolean>(false);
   const [logCompanyOffer, setLogCompanyOffer] = useState<any>(null);
 
-  // Overall Log Modal State (Complete overall history)
-  const [showOverallLogModal, setShowOverallLogModal] = useState<boolean>(false);
-  const [overallLogs, setOverallLogs] = useState<any[]>([]);
-  const [overallLogSearch, setOverallLogSearch] = useState<string>('');
-  const [loadingOverallLogs, setLoadingOverallLogs] = useState<boolean>(false);
+  // Editable Price State per Offer (local map: offerId -> { basePrice, gstPercentage })
+  const [editedPrices, setEditedPrices] = useState<Record<string, { basePrice: number; gstPercentage: number }>>({});
+  const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
+
+  // Explanation Modal State for Ratings & Delivery Days
+  const [showMetricsHelp, setShowMetricsHelp] = useState<boolean>(false);
 
   // Load products from database
   useEffect(() => {
@@ -100,7 +115,7 @@ export function SimpleProductComparer() {
     }
   }, [filteredProducts, selectedProduct]);
 
-  // Fetch and sort offers Low to High for selected product
+  // Fetch offers for selected product
   useEffect(() => {
     if (!selectedProduct) return;
     async function loadOffers() {
@@ -109,10 +124,17 @@ export function SimpleProductComparer() {
         const res = await fetch(`/api/quotations?productId=${selectedProduct.id}`);
         const json = await res.json();
         if (json.success) {
-          const sorted = (json.data.quotations || []).sort(
-            (a: any, b: any) => a.effectivePrice - b.effectivePrice
-          );
-          setOffers(sorted);
+          const fetchedOffers = json.data.quotations || [];
+          setOffers(fetchedOffers);
+          // Initialize local editable prices map
+          const initialEdits: Record<string, { basePrice: number; gstPercentage: number }> = {};
+          fetchedOffers.forEach((o: any) => {
+            initialEdits[o.id] = {
+              basePrice: o.basePrice,
+              gstPercentage: o.gstPercentage,
+            };
+          });
+          setEditedPrices(initialEdits);
         }
       } catch (err) {
         console.error('Error fetching offers:', err);
@@ -123,121 +145,166 @@ export function SimpleProductComparer() {
     loadOffers();
   }, [selectedProduct]);
 
-  // Open Card Specific Log Modal (Only searched product log)
+  // Calculate sorted offers based on current (edited or original) effective prices
+  const sortedOffers = useMemo(() => {
+    return [...offers].sort((a, b) => {
+      const priceA = editedPrices[a.id]
+        ? editedPrices[a.id].basePrice * (1 + editedPrices[a.id].gstPercentage / 100)
+        : a.effectivePrice;
+      const priceB = editedPrices[b.id]
+        ? editedPrices[b.id].basePrice * (1 + editedPrices[b.id].gstPercentage / 100)
+        : b.effectivePrice;
+      return priceA - priceB;
+    });
+  }, [offers, editedPrices]);
+
+  // Open Card Specific Log Modal (Only searched product log - static audit)
   const handleOpenProductLog = (offer: any) => {
     setLogCompanyOffer(offer);
     setShowLogModal(true);
   };
 
-  // Open Overall Log Modal (Complete overall vendor history)
-  const handleOpenOverallLog = async () => {
-    setShowOverallLogModal(true);
-    try {
-      setLoadingOverallLogs(true);
-      const res = await fetch('/api/suppliers');
-      const json = await res.json();
-      if (json.success) {
-        // Flatten all product quotations across all suppliers
-        const allQuotationLogs: any[] = [];
-        json.data.forEach((s: any) => {
-          if (s.products && s.products.length > 0) {
-            s.products.forEach((sp: any) => {
-              allQuotationLogs.push({
-                supplierName: s.companyName,
-                gstNumber: s.gstNumber,
-                phone: s.phone,
-                productName: sp.product?.name || 'Solar Material',
-                category: sp.product?.category || 'Equipment',
-                specification: sp.product?.specification || 'Standard Spec',
-                brand: sp.product?.brand || 'Standard Make',
-                hsn: sp.product?.hsn || '8541',
-                basePrice: sp.basePrice,
-                gstPercentage: sp.gstPercentage,
-                effectivePrice: sp.effectivePrice,
-                invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
-                discount: sp.discount || '—',
-              });
-            });
-          }
-        });
-        setOverallLogs(allQuotationLogs);
+  // Add Item to Cart
+  const handleAddToCart = (offer: any) => {
+    const edit = editedPrices[offer.id] || { basePrice: offer.basePrice, gstPercentage: offer.gstPercentage };
+    const effectivePrice = Number((edit.basePrice * (1 + edit.gstPercentage / 100)).toFixed(2));
+
+    const cartItemId = `${offer.supplier.id}_${selectedProduct.id}`;
+
+    setCart((prevCart) => {
+      const existing = prevCart.find((item) => item.id === cartItemId);
+      if (existing) {
+        return prevCart.map((item) =>
+          item.id === cartItemId
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+                basePrice: edit.basePrice,
+                gstPercentage: edit.gstPercentage,
+                effectivePrice,
+              }
+            : item
+        );
+      } else {
+        return [
+          ...prevCart,
+          {
+            id: cartItemId,
+            productId: selectedProduct.id,
+            productName: selectedProduct.name,
+            unit: selectedProduct.unit || 'Pcs',
+            supplierId: offer.supplier.id,
+            supplierName: offer.supplier.companyName,
+            basePrice: edit.basePrice,
+            gstPercentage: edit.gstPercentage,
+            effectivePrice,
+            quantity: offer.minimumOrderQuantity || 10,
+            leadTime: offer.leadTime,
+            invoiceNo: offer.invoiceNo || 'FSCH/00139/25-26',
+          },
+        ];
       }
-    } catch (err) {
-      console.error('Error fetching overall logs:', err);
-    } finally {
-      setLoadingOverallLogs(false);
-    }
+    });
+
+    setShowCartDrawer(true);
   };
 
-  const handleOrder = async () => {
-    if (!selectedOffer || !selectedProduct) return;
+  // Update Cart Quantity
+  const handleUpdateCartQuantity = (id: string, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  };
+
+  // Remove Item from Cart
+  const handleRemoveFromCart = (id: string) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Estimated Cart Totals
+  const cartSummary = useMemo(() => {
+    const baseTotal = cart.reduce((acc, item) => acc + item.basePrice * item.quantity, 0);
+    const gstTotal = cart.reduce(
+      (acc, item) => acc + (item.effectivePrice - item.basePrice) * item.quantity,
+      0
+    );
+    const grandTotal = baseTotal + gstTotal;
+    const totalItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+    return { baseTotal, gstTotal, grandTotal, totalItemsCount };
+  }, [cart]);
+
+  // Final Order Now Execution from Cart
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
     try {
+      // Create PO for first vendor group
+      const firstVendorItem = cart[0];
       const res = await fetch('/api/purchase-orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          supplierId: selectedOffer.supplier.id,
+          supplierId: firstVendorItem.supplierId,
           createdById: 'manager-id',
-          items: [
-            {
-              productId: selectedProduct.id,
-              quantity,
-              unitPrice: selectedOffer.basePrice,
-              gstPercentage: selectedOffer.gstPercentage,
-            },
-          ],
+          items: cart.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.basePrice,
+            gstPercentage: item.gstPercentage,
+          })),
         }),
       });
       const json = await res.json();
       if (json.success) {
-        setOrderSuccessMsg(`Order ${json.data.poNumber} placed! Total: ₹${json.data.totalAmount.toLocaleString('en-IN')}`);
+        setOrderSuccessMsg(
+          `Purchase Order ${json.data.poNumber} Placed Successfully! Total: ₹${json.data.totalAmount.toLocaleString('en-IN')}`
+        );
         setTimeout(() => {
-          setShowPOModal(false);
+          setCart([]);
+          setShowCartDrawer(false);
           setOrderSuccessMsg(null);
-        }, 2000);
+        }, 2500);
       }
     } catch (err) {
-      console.error('Error creating order:', err);
+      console.error('Checkout error:', err);
     }
   };
 
-  // Filter overall logs
-  const filteredOverallLogs = useMemo(() => {
-    if (!overallLogSearch.trim()) return overallLogs;
-    const term = overallLogSearch.toLowerCase();
-    return overallLogs.filter(
-      (log) =>
-        log.supplierName.toLowerCase().includes(term) ||
-        log.productName.toLowerCase().includes(term) ||
-        log.invoiceNo.toLowerCase().includes(term) ||
-        log.brand.toLowerCase().includes(term) ||
-        log.hsn.toLowerCase().includes(term)
-    );
-  }, [overallLogs, overallLogSearch]);
-
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Clean Header with Overall Log Menu Button */}
+      {/* Clean Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-left space-y-1">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-            <span>⚡ ProcureAI • Category Filter & Price Finder</span>
+            <span>⚡ ProcureAI • Category Filter & Dynamic Price Finder</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Select Category & Material
           </h1>
           <p className="text-slate-600 text-xs sm:text-sm">
-            Compare prices ranked <strong>Lowest to Highest</strong> for your selected item.
+            Compare prices ranked <strong>Lowest to Highest</strong>. Edit rates on the fly & add to cart.
           </p>
         </div>
 
-        {/* OVERALL LOG MENU BUTTON */}
+        {/* Floating Cart Trigger Button */}
         <button
-          onClick={handleOpenOverallLog}
-          className="px-4 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-md"
+          onClick={() => setShowCartDrawer(true)}
+          className="relative px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-md shadow-blue-500/20"
         >
-          <FileSpreadsheet className="h-4.5 w-4.5 text-blue-400" />
-          <span>Overall Log Menu</span>
+          <ShoppingCart className="h-4.5 w-4.5" />
+          <span>Cart ({cartSummary.totalItemsCount})</span>
+          {cart.length > 0 && (
+            <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-slate-900 text-white font-black text-[10px] flex items-center justify-center border-2 border-white">
+              {cart.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -318,7 +385,7 @@ export function SimpleProductComparer() {
         )}
       </div>
 
-      {/* 3. Company Price List (Low to High) */}
+      {/* 3. Company Price List (Low to High with Editable Prices & Add to Cart) */}
       {selectedProduct && (
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between px-1 border-b border-slate-200 pb-3">
@@ -326,23 +393,45 @@ export function SimpleProductComparer() {
               <span className="text-xs text-slate-500">Step 2: Compare Prices for</span>
               <h2 className="text-xl font-extrabold text-slate-900">{selectedProduct.name}</h2>
             </div>
-            <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-              Ranked: Lowest ➔ Highest Price
-            </span>
+
+            <div className="flex items-center space-x-2">
+              {/* Delivery & Rating Info Help Button */}
+              <button
+                onClick={() => setShowMetricsHelp(true)}
+                className="text-xs font-bold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2.5 py-1 rounded-xl border border-slate-300 transition flex items-center space-x-1"
+                title="How delivery days and vendor ratings are calculated"
+              >
+                <HelpCircle className="h-3.5 w-3.5 text-blue-600" />
+                <span>How Ratings & Delivery work?</span>
+              </button>
+
+              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 hidden sm:inline-block">
+                Ranked: Lowest ➔ Highest
+              </span>
+            </div>
           </div>
 
           {loading ? (
             <div className="py-12 text-center text-slate-500 text-sm bg-white rounded-2xl border border-slate-200">
               Loading prices for {selectedProduct.name}...
             </div>
-          ) : offers.length > 0 ? (
+          ) : sortedOffers.length > 0 ? (
             <div className="space-y-3">
-              {offers.map((offer, index) => {
+              {sortedOffers.map((offer, index) => {
                 const isCheapest = index === 0;
+                const currentEdit = editedPrices[offer.id] || {
+                  basePrice: offer.basePrice,
+                  gstPercentage: offer.gstPercentage,
+                };
+                const calculatedEffective = Number(
+                  (currentEdit.basePrice * (1 + currentEdit.gstPercentage / 100)).toFixed(2)
+                );
+                const isEditing = editingOfferId === offer.id;
+
                 return (
                   <div
                     key={offer.id}
-                    className={`rounded-2xl p-5 border transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                    className={`rounded-2xl p-5 border transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                       isCheapest
                         ? 'bg-blue-50/90 border-blue-600 shadow-md'
                         : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
@@ -389,45 +478,100 @@ export function SimpleProductComparer() {
                       </div>
                     </div>
 
-                    {/* Right Price & Action Buttons */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200">
-                      <div className="text-left sm:text-right pr-2">
-                        <span className="text-[10px] text-slate-500 block font-semibold uppercase">
-                          Final Price (incl. {offer.gstPercentage}% GST)
+                    {/* Middle: Editable Price & GST Details */}
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 shrink-0 md:w-56">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                          Quote Details (Editable)
                         </span>
-                        <div className="text-2xl font-black text-blue-600">
-                          ₹{offer.effectivePrice.toLocaleString('en-IN')}
-                        </div>
-                        <span className="text-[11px] text-slate-500 block">
-                          Base: ₹{offer.basePrice.toLocaleString('en-IN')}
-                        </span>
+                        <button
+                          onClick={() => setEditingOfferId(isEditing ? null : offer.id)}
+                          className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                        >
+                          {isEditing ? <Check className="h-3.5 w-3.5" /> : <Edit2 className="h-3 w-3" />}
+                          <span>{isEditing ? 'Done' : 'Edit Rate'}</span>
+                        </button>
                       </div>
 
-                      {/* Card Specific View Log Button (Filtered to Searched Product ONLY) */}
+                      {isEditing ? (
+                        <div className="space-y-2 text-xs">
+                          <div>
+                            <label className="text-[10px] text-slate-500 font-bold block">Base Rate (₹)</label>
+                            <input
+                              type="number"
+                              value={currentEdit.basePrice}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setEditedPrices((prev) => ({
+                                  ...prev,
+                                  [offer.id]: { ...currentEdit, basePrice: val },
+                                }));
+                              }}
+                              className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-slate-500 font-bold block">GST (%)</label>
+                            <input
+                              type="number"
+                              value={currentEdit.gstPercentage}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setEditedPrices((prev) => ({
+                                  ...prev,
+                                  [offer.id]: { ...currentEdit, gstPercentage: val },
+                                }));
+                              }}
+                              className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500">Base Rate:</span>
+                            <strong className="text-slate-800">₹{currentEdit.basePrice.toLocaleString('en-IN')}</strong>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500">GST ({currentEdit.gstPercentage}%):</span>
+                            <strong className="text-slate-800">
+                              +₹{((currentEdit.basePrice * currentEdit.gstPercentage) / 100).toLocaleString('en-IN')}
+                            </strong>
+                          </div>
+                          <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
+                            <span className="font-bold text-slate-700">With GST:</span>
+                            <strong className="text-blue-600 font-black text-sm">
+                              ₹{calculatedEffective.toLocaleString('en-IN')}
+                            </strong>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Action Buttons: View Log & ADD TO CART */}
+                    <div className="flex items-center justify-end gap-2 pt-2 md:pt-0">
+                      {/* View Log Button (Static Historical Audit) */}
                       <button
                         onClick={() => handleOpenProductLog(offer)}
-                        className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center space-x-1.5 shrink-0 shadow-sm"
-                        title="View log for this specific product only"
+                        className="px-3 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center space-x-1 shrink-0"
+                        title="View static historical log for this product"
                       >
-                        <History className="h-4 w-4 text-blue-600" />
+                        <History className="h-3.5 w-3.5 text-blue-600" />
                         <span>View Log</span>
                       </button>
 
-                      {/* Order Now Button */}
+                      {/* ADD TO CART BUTTON (Replaces Order Now) */}
                       <button
-                        onClick={() => {
-                          setSelectedOffer(offer);
-                          setQuantity(offer.minimumOrderQuantity || 10);
-                          setShowPOModal(true);
-                        }}
+                        onClick={() => handleAddToCart(offer)}
                         className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-1.5 shrink-0 ${
                           isCheapest
                             ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
                             : 'bg-slate-900 text-white hover:bg-slate-800'
                         }`}
                       >
-                        <ShoppingBag className="h-4 w-4" />
-                        <span>Order Now</span>
+                        <ShoppingCart className="h-4 w-4" />
+                        <span>Add to Cart</span>
                       </button>
                     </div>
                   </div>
@@ -442,7 +586,129 @@ export function SimpleProductComparer() {
         </div>
       )}
 
-      {/* 📜 CARD SPECIFIC VIEW LOG MODAL (Shows ONLY the searched product log!) */}
+      {/* 🛒 SHOPPING CART DRAWER (With Estimated Overall Amount & Order Now Button) */}
+      {showCartDrawer && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex justify-end">
+          <div className="bg-white max-w-md w-full h-full p-6 shadow-2xl flex flex-col justify-between overflow-y-auto relative text-slate-900">
+            <button
+              onClick={() => setShowCartDrawer(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Cart Header */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3 border-b border-slate-200 pb-4">
+                <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+                  <ShoppingCart className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-lg">Procurement Shopping Cart</h3>
+                  <p className="text-xs text-slate-500">{cart.length} Vendor Item(s) Selected</p>
+                </div>
+              </div>
+
+              {orderSuccessMsg ? (
+                <div className="p-6 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold text-center flex flex-col items-center justify-center gap-3 py-12">
+                  <CheckCircle2 className="h-10 w-10 text-blue-600 animate-bounce" />
+                  <span className="text-sm font-extrabold">{orderSuccessMsg}</span>
+                </div>
+              ) : cart.length > 0 ? (
+                /* Cart Items List */
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+                  {cart.map((item) => (
+                    <div key={item.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-extrabold text-slate-900">{item.productName}</h4>
+                          <span className="text-[11px] text-blue-600 font-bold block">{item.supplierName}</span>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveFromCart(item.id)}
+                          className="text-slate-400 hover:text-rose-600 p-1"
+                          title="Remove item"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-[11px]">
+                        <div className="flex items-center space-x-1.5">
+                          <button
+                            onClick={() => handleUpdateCartQuantity(item.id, -1)}
+                            className="h-6 w-6 rounded-md bg-white border border-slate-300 flex items-center justify-center text-slate-700 font-bold hover:bg-slate-100"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="font-extrabold text-slate-900 px-1">{item.quantity} {item.unit}</span>
+                          <button
+                            onClick={() => handleUpdateCartQuantity(item.id, 1)}
+                            className="h-6 w-6 rounded-md bg-white border border-slate-300 flex items-center justify-center text-slate-700 font-bold hover:bg-slate-100"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-500 block">Unit: ₹{item.effectivePrice}</span>
+                          <span className="font-extrabold text-slate-900 text-xs">
+                            ₹{(item.effectivePrice * item.quantity).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-16 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-slate-200">
+                  Your cart is empty. Click "Add to Cart" on any product to estimate overall amount!
+                </div>
+              )}
+            </div>
+
+            {/* Cart Summary & Order Now Execution Button */}
+            {!orderSuccessMsg && cart.length > 0 && (
+              <div className="space-y-4 pt-4 border-t border-slate-200">
+                {/* Overall Estimated Amount Card */}
+                <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 shadow-lg">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-400 block">
+                    Overall Estimated Amount Summary
+                  </span>
+
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Subtotal (Base Rates):</span>
+                      <strong className="text-white">₹{cartSummary.baseTotal.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Total Estimated GST:</span>
+                      <strong className="text-blue-300">+₹{cartSummary.gstTotal.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-800">
+                      <span className="font-black text-white">Grand Total Amount:</span>
+                      <span className="font-black text-blue-400 text-lg">
+                        ₹{cartSummary.grandTotal.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Order Now Button */}
+                <button
+                  onClick={handleCheckout}
+                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2"
+                >
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span>Order Now (Generate Purchase Order)</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 📜 CARD SPECIFIC VIEW LOG MODAL (Static Historical Audit) */}
       {showLogModal && logCompanyOffer && selectedProduct && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-xl w-full space-y-5 shadow-2xl relative text-slate-900">
@@ -453,27 +719,24 @@ export function SimpleProductComparer() {
               <X className="h-5 w-5" />
             </button>
 
-            {/* Modal Header */}
             <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
               <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-                <Building2 className="h-6 w-6" />
+                <History className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
                   {logCompanyOffer.supplier.companyName}
                 </h3>
                 <p className="text-xs text-blue-600 font-bold">
-                  Product Audit Log: <strong className="text-slate-900">{selectedProduct.name}</strong>
+                  Static Audit Log: <strong className="text-slate-900">{selectedProduct.name}</strong>
                 </p>
               </div>
             </div>
 
-            {/* Product Specific Audit Table */}
             <div className="space-y-3 text-xs">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-500 font-semibold text-[11px]">Vendor GSTIN</span>
-                <p className="font-mono font-bold text-blue-600 text-xs">{logCompanyOffer.supplier.gstNumber}</p>
-                <p className="text-slate-600 text-[11px] mt-1">{logCompanyOffer.supplier.address}</p>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] flex justify-between">
+                <span>GSTIN: <strong className="text-slate-900">{logCompanyOffer.supplier.gstNumber}</strong></span>
+                <span className="text-emerald-700 font-bold">✅ Static Historical Record</span>
               </div>
 
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -481,8 +744,7 @@ export function SimpleProductComparer() {
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px]">
                       <th className="py-2.5 px-3">Invoice No</th>
-                      <th className="py-2.5 px-3">HSN No</th>
-                      <th className="py-2.5 px-3">Specification</th>
+                      <th className="py-2.5 px-3">HSN Code</th>
                       <th className="py-2.5 px-3">Make</th>
                       <th className="py-2.5 px-3">Unit Rate</th>
                       <th className="py-2.5 px-3 text-blue-600">With GST</th>
@@ -496,9 +758,6 @@ export function SimpleProductComparer() {
                       </td>
                       <td className="py-3 px-3 font-mono text-slate-600">
                         {selectedProduct.hsn || '8541'}
-                      </td>
-                      <td className="py-3 px-3 text-slate-700 font-medium">
-                        {selectedProduct.specification}
                       </td>
                       <td className="py-3 px-3 font-bold text-slate-900">
                         {selectedProduct.brand}
@@ -516,195 +775,59 @@ export function SimpleProductComparer() {
                   </tbody>
                 </table>
               </div>
-
-              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-[11px] flex items-center justify-between font-semibold">
-                <span>Quotation Validity</span>
-                <span>Active • Guaranteed Price</span>
-              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 📊 OVERALL LOG MENU MODAL (Displays complete company-wide logs & all invoices) */}
-      {showOverallLogModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-4xl w-full space-y-4 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setShowOverallLogModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* Modal Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-2xl bg-blue-600 text-white shadow-md">
-                  <FileSpreadsheet className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-xl">
-                    Overall Company Audit Log
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Complete invoice, quotation & pricing history across all suppliers & materials ({overallLogs.length} Records)
-                  </p>
-                </div>
-              </div>
-
-              {/* Search within overall log */}
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <input
-                  type="text"
-                  value={overallLogSearch}
-                  onChange={(e) => setOverallLogSearch(e.target.value)}
-                  placeholder="Filter invoice, vendor, HSN..."
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600"
-                />
-              </div>
-            </div>
-
-            {loadingOverallLogs ? (
-              <div className="py-16 text-center text-slate-500 text-sm">
-                Loading complete company logs from database...
-              </div>
-            ) : (
-              <div className="space-y-3 text-xs">
-                <div className="border border-slate-200 rounded-xl overflow-x-auto shadow-sm max-h-[60vh]">
-                  <table className="w-full text-left text-xs">
-                    <thead className="sticky top-0 bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px] z-10">
-                      <tr>
-                        <th className="py-3 px-3">Vendor / Company</th>
-                        <th className="py-3 px-3">Invoice No</th>
-                        <th className="py-3 px-3">HSN No</th>
-                        <th className="py-3 px-3">Product Name</th>
-                        <th className="py-3 px-3">Specification</th>
-                        <th className="py-3 px-3">Make</th>
-                        <th className="py-3 px-3">Unit Rate</th>
-                        <th className="py-3 px-3">GST %</th>
-                        <th className="py-3 px-3 text-blue-600">With GST</th>
-                        <th className="py-3 px-3 text-emerald-700">Discount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 text-[11px]">
-                      {filteredOverallLogs.map((log, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50 transition">
-                          <td className="py-2.5 px-3 font-extrabold text-slate-900">
-                            {log.supplierName}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-blue-600">
-                            {log.invoiceNo}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-slate-600">
-                            {log.hsn}
-                          </td>
-                          <td className="py-2.5 px-3 font-bold text-slate-800">
-                            {log.productName}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-600">
-                            {log.specification}
-                          </td>
-                          <td className="py-2.5 px-3 font-semibold text-slate-800">
-                            {log.brand}
-                          </td>
-                          <td className="py-2.5 px-3 font-semibold text-slate-800">
-                            ₹{log.basePrice.toLocaleString('en-IN')}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-600">
-                            {log.gstPercentage}%
-                          </td>
-                          <td className="py-2.5 px-3 font-black text-blue-600">
-                            ₹{log.effectivePrice.toLocaleString('en-IN')}
-                          </td>
-                          <td className="py-2.5 px-3 font-bold text-emerald-600">
-                            {log.discount}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Simple Order Modal */}
-      {showPOModal && selectedOffer && selectedProduct && (
+      {/* 💡 EXPLANATION MODAL (How Delivery Days & Vendor Ratings are Calculated) */}
+      {showMetricsHelp && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-xl relative text-slate-900">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl relative text-slate-900">
             <button
-              onClick={() => setShowPOModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"
+              onClick={() => setShowMetricsHelp(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
               <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-                <ShoppingBag className="h-5 w-5" />
+                <HelpCircle className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-extrabold text-slate-900 text-base">Place Purchase Order</h3>
-                <p className="text-xs text-slate-500">{selectedOffer.supplier.companyName}</p>
+                <h3 className="font-extrabold text-slate-900 text-base">Delivery Days & Vendor Ratings Guide</h3>
+                <p className="text-xs text-slate-500">How these numbers are derived from supplier quotes</p>
               </div>
             </div>
 
-            {orderSuccessMsg ? (
-              <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold text-center flex flex-col items-center gap-2">
-                <CheckCircle2 className="h-8 w-8 text-blue-600 animate-bounce" />
-                <span>{orderSuccessMsg}</span>
+            <div className="space-y-4 text-xs leading-relaxed text-slate-700">
+              <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 space-y-1">
+                <h4 className="font-extrabold text-blue-900 text-xs flex items-center gap-1.5">
+                  <Truck className="h-4 w-4 text-blue-600" />
+                  1. Delivery Days (Dispatch Lead Time)
+                </h4>
+                <p className="text-slate-600 text-[11px]">
+                  <strong>Calculation:</strong> Extracted from supplier SLA quotation terms in the Google Sheet. 
+                  - Local Tamil Nadu/Coimbatore warehouses dispatch within <strong>1 to 3 Days</strong>.
+                  - Out-of-state manufacturer shipments take <strong>4 to 7 Days</strong>.
+                </p>
               </div>
-            ) : (
-              <div className="space-y-4 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-slate-500 block">Item Selected</span>
-                  <p className="font-extrabold text-slate-900 text-sm mt-0.5">{selectedProduct.name}</p>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <div>
-                    <span className="text-slate-500">Unit Price (incl. GST)</span>
-                    <p className="font-extrabold text-blue-600 text-sm">₹{selectedOffer.effectivePrice.toLocaleString('en-IN')}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Delivery Time</span>
-                    <p className="font-bold text-slate-800">{selectedOffer.leadTime} Days</p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-bold block mb-1">
-                    Order Quantity ({selectedProduct.unit})
-                  </label>
-                  <input
-                    type="number"
-                    min={selectedOffer.minimumOrderQuantity}
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 font-bold focus:border-blue-600 focus:outline-none"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">Min Quantity: {selectedOffer.minimumOrderQuantity} {selectedProduct.unit}</p>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between text-sm">
-                  <span className="font-bold text-slate-700">Total Price</span>
-                  <span className="font-black text-blue-600 text-base">
-                    ₹{(selectedOffer.effectivePrice * quantity).toLocaleString('en-IN')}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handleOrder}
-                  className="w-full py-3 rounded-xl bg-blue-600 text-white font-extrabold text-sm hover:bg-blue-700 shadow-md shadow-blue-500/20 transition"
-                >
-                  Confirm Order
-                </button>
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
+                <h4 className="font-extrabold text-amber-900 text-xs flex items-center gap-1.5">
+                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                  2. Vendor Rating (1.0 to 5.0 ⭐)
+                </h4>
+                <p className="text-slate-700 text-[11px]">
+                  <strong>Calculation:</strong> Multi-factor score combining:
+                  - <strong>GST Portal Active Status</strong> (20%)
+                  - <strong>On-Time Delivery Rate</strong> (30%)
+                  - <strong>Pricing Competitiveness</strong> (30%)
+                  - <strong>Customer Feedback Score</strong> (20%)
+                </p>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
