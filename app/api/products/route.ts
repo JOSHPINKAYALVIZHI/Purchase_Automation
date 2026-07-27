@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
     const products = await getProducts({ search, category, brand });
     return NextResponse.json({ success: true, count: products.length, data: products });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('❌ GET /api/products Error:', error);
+    return NextResponse.json({ success: false, error: error?.message || String(error) }, { status: 500 });
   }
 }
 
