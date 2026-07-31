@@ -78,20 +78,20 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo & Brand Title */}
-          <div className="flex items-center space-x-3.5">
+          <div className="flex items-center space-x-3 shrink-0">
             <img
               src="/jesuans_logo.png"
               alt="JESUANS Solar Make's Bright"
-              className="h-12 sm:h-14 w-auto object-contain drop-shadow-sm"
+              className="h-10 sm:h-12 w-auto object-contain drop-shadow-sm shrink-0"
             />
-            <div className="h-8 w-[2px] bg-slate-300 hidden sm:block" />
-            <span className="font-black text-emerald-700 text-xl sm:text-2xl tracking-tight hidden sm:block">
+            <div className="h-7 w-[2px] bg-slate-300 hidden xl:block" />
+            <span className="font-black text-emerald-700 text-lg sm:text-xl tracking-tight hidden xl:block whitespace-nowrap">
               Purchase Tracker
             </span>
           </div>
 
           {/* Center Navigation Menu */}
-          <nav className="hidden lg:flex items-center space-x-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+          <nav className="hidden md:flex items-center space-x-1 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -99,13 +99,13 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`px-4.5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 ${
+                  className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition flex items-center space-x-1.5 ${
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25'
                       : 'text-slate-700 hover:text-slate-900 hover:bg-white/80'
                   }`}
                 >
-                  <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span>{item.label}</span>
                 </button>
               );
