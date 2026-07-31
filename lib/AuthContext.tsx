@@ -31,6 +31,7 @@ interface AuthContextType {
   login: (u: string, p: string) => { success: boolean; error?: string };
   logout: () => void;
   pendingRequests: ProcurementRequest[];
+  approvedLogItems: any[];
   notifications: AppNotification[];
   sendRequestToAdmin: (items: any[], total: number) => void;
   approveRequest: (requestId: string) => any[];
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState<boolean>(false);
   const [user, setUser] = useState<UserSession | null>(null);
   const [pendingRequests, setPendingRequests] = useState<ProcurementRequest[]>([]);
+  const [approvedLogItems, setApprovedLogItems] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [purchaseLogStatuses, setPurchaseLogStatuses] = useState<Record<string, 'SENT' | 'RECEIVED'>>({});
 
@@ -68,6 +70,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedRequests) {
       try {
         setPendingRequests(JSON.parse(savedRequests));
+      } catch (e) {}
+    }
+
+    // Load saved approved log items
+    const savedApproved = localStorage.getItem('jesuans_approved_log_items');
+    if (savedApproved) {
+      try {
+        setApprovedLogItems(JSON.parse(savedApproved));
       } catch (e) {}
     }
 
@@ -154,6 +164,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPendingRequests(updatedReqs);
     localStorage.setItem('jesuans_pending_requests', JSON.stringify(updatedReqs));
 
+    // Create new approved items for purchase logs
+    const newLogEntries = req.items.map((item, idx) => ({
+      id: `APPROVED_${req.id}_${idx}`,
+      supplierName: item.supplierName || item.supplier?.companyName || 'Approved Vendor',
+      gstNumber: item.gstNumber || '33AAACG123456789',
+      phone: item.supplierPhone || item.supplier?.phone || '',
+      address: item.address || 'Coimbatore',
+      productName: item.name || item.productName || 'Solar Material',
+      category: item.category || 'Solar Equipment',
+      specification: item.specification || 'Standard Spec',
+      brand: item.brand || 'Standard Make',
+      hsn: item.hsn || '8541',
+      basePrice: item.basePrice || 0,
+      gstPercentage: item.gstPercentage || 18,
+      effectivePrice: item.effectivePrice || item.basePrice * 1.18,
+      invoiceNo: item.invoiceNo || `FSCH/${Math.floor(10000 + Math.random() * 90000)}/25-26`,
+      discount: item.discount || '—',
+      date: req.date,
+    }));
+
+    const updatedApprovedItems = [...newLogEntries, ...approvedLogItems];
+    setApprovedLogItems(updatedApprovedItems);
+    localStorage.setItem('jesuans_approved_log_items', JSON.stringify(updatedApprovedItems));
+
+    // Set initial status of newly approved items to 'SENT'
+    const newStatuses: Record<string, 'SENT' | 'RECEIVED'> = { ...purchaseLogStatuses };
+    newLogEntries.forEach((item) => {
+      newStatuses[item.id] = 'SENT';
+    });
+    setPurchaseLogStatuses(newStatuses);
+    localStorage.setItem('jesuans_log_statuses', JSON.stringify(newStatuses));
+
     // Notify Employee
     const newNotif: AppNotification = {
       id: 'NOTIF-' + Date.now(),
@@ -166,14 +208,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updatedNotifs = [newNotif, ...notifications];
     setNotifications(updatedNotifs);
     localStorage.setItem('jesuans_notifications', JSON.stringify(updatedNotifs));
-
-    // Set initial status of newly approved items to 'SENT'
-    const newStatuses = { ...purchaseLogStatuses };
-    req.items.forEach((item) => {
-      newStatuses[item.id] = 'SENT';
-    });
-    setPurchaseLogStatuses(newStatuses);
-    localStorage.setItem('jesuans_log_statuses', JSON.stringify(newStatuses));
 
     return req.items;
   };
@@ -217,6 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         pendingRequests,
+        approvedLogItems,
         notifications,
         sendRequestToAdmin,
         approveRequest,

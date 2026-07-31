@@ -5,7 +5,7 @@ import { Search, FileSpreadsheet, Filter, Download, ArrowUpDown, CheckSquare, Sq
 import { useAuth } from '@/lib/AuthContext';
 
 export function PurchaseLogsView() {
-  const { purchaseLogStatuses, toggleLogStatus } = useAuth();
+  const { purchaseLogStatuses, toggleLogStatus, approvedLogItems } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
@@ -54,14 +54,21 @@ export function PurchaseLogsView() {
     loadLogs();
   }, []);
 
+  // Merge approved employee procurement orders into Purchase Logs table
+  const allCombinedLogs = useMemo(() => {
+    return [...approvedLogItems, ...logs];
+  }, [logs, approvedLogItems]);
+
   const categories = useMemo(() => {
     const set = new Set<string>();
-    logs.forEach((l) => set.add(l.category));
+    allCombinedLogs.forEach((l) => {
+      if (l.category) set.add(l.category);
+    });
     return Array.from(set).sort();
-  }, [logs]);
+  }, [allCombinedLogs]);
 
   const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
+    return allCombinedLogs.filter((log) => {
       const matchesCategory = categoryFilter === 'ALL' || log.category === categoryFilter;
       const matchesSearch =
         search === '' ||
@@ -72,7 +79,7 @@ export function PurchaseLogsView() {
         log.brand.toLowerCase().includes(search.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [logs, categoryFilter, search]);
+  }, [allCombinedLogs, categoryFilter, search]);
 
   const handleExportCSV = () => {
     if (!filteredLogs || filteredLogs.length === 0) return;
@@ -107,7 +114,7 @@ export function PurchaseLogsView() {
       l.effectivePrice || 0,
       l.totalAmount || 0,
       `"${l.discount || ''}"`,
-      `"${purchaseLogStatuses[l.id] || 'SENT'}"`,
+      `"${purchaseLogStatuses[l.id] || 'PENDING'}"`,
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
@@ -192,27 +199,35 @@ export function PurchaseLogsView() {
               </thead>
               <tbody className="divide-y divide-slate-200 text-[11px]">
                 {filteredLogs.map((log) => {
-                  const isReceived = (purchaseLogStatuses[log.id] || 'SENT') === 'RECEIVED';
+                  const itemStatus = purchaseLogStatuses[log.id];
+                  const isReceived = itemStatus === 'RECEIVED';
+
                   return (
                     <tr key={log.id} className="hover:bg-slate-50 transition">
-                      {/* Checkbox Status Column */}
+                      {/* Status Column: Checkbox appears ONLY after Admin approval */}
                       <td className="py-3 px-3">
-                        <button
-                          onClick={() => toggleLogStatus(log.id)}
-                          className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition flex items-center space-x-1.5 border shadow-sm ${
-                            isReceived
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
-                              : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isReceived}
-                            onChange={() => toggleLogStatus(log.id)}
-                            className="h-3.5 w-3.5 accent-emerald-600 rounded cursor-pointer"
-                          />
-                          <span>{isReceived ? 'RECEIVED' : 'SENT'}</span>
-                        </button>
+                        {itemStatus ? (
+                          <button
+                            onClick={() => toggleLogStatus(log.id)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition flex items-center space-x-1.5 border shadow-sm ${
+                              isReceived
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
+                                : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isReceived}
+                              onChange={() => toggleLogStatus(log.id)}
+                              className="h-3.5 w-3.5 accent-emerald-600 rounded cursor-pointer"
+                            />
+                            <span>{isReceived ? 'RECEIVED' : 'SENT'}</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 font-semibold text-[10px] px-2 italic">
+                            —
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 font-mono font-bold text-emerald-700">{log.invoiceNo}</td>
                       <td className="py-3 px-3 text-slate-500">{log.date}</td>
