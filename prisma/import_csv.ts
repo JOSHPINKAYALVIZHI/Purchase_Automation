@@ -88,17 +88,44 @@ async function importSheetData() {
 
     const cleanGst = `33AAACG${Math.abs(hashString(cleanVendorName)).toString().padStart(6, '0')}1Z5`;
 
+    const contactMap: Record<string, { contactPerson: string; phone: string }> = {
+      'FESTA SOLAR': { contactPerson: 'ETTAPAN (Sales Head) / DIVYA (Assistant)', phone: '+91 94429 65029, +91 89258 24062, +91 89259 97544' },
+      'K POWERS': { contactPerson: 'warehouse', phone: '+91 73730 65564, +91 92444 14441' },
+      'M.G SOLAR': { contactPerson: 'Hemalatha (Sales)', phone: '+91 90435 50368, +91 88708 59033' },
+      'R.K. METAL': { contactPerson: 'Sugumaran (Executive) / Ramyareena (Sales)', phone: '+91 93449 22816, +91 89715 58181, +91 93449 16186' },
+      'ZARON': { contactPerson: 'Dhanaseker (Sales) / Office', phone: '+91 78719 66676, +91 70940 66676' },
+      'BEST INSULATION': { contactPerson: 'Office', phone: '+91 93641 23001, +91 93631 45274' },
+      'EEE ENERGY': { contactPerson: 'Kenila (Sales Executive) / Tamil arasan', phone: '+91 73977 65665, +91 84381 00739' },
+      'SV ROOFINGS': { contactPerson: 'Head Office', phone: '+91 95855 43236' },
+      'SUPREME STEELS': { contactPerson: 'Sunil (Manager) / Office', phone: '+91 99762 28272, +91 74489 04000, +91 94980 77272' },
+      'OM MURUGA': { contactPerson: 'Kannan (Sales)', phone: '+91 96269 80923' },
+      'EXCELERTHINGS': { contactPerson: 'Ann Juicy Raj (Electrical Engineer) / Office', phone: '+91 92079 28885, +91 94005 18233' },
+      'SOLAR HI-TECH': { contactPerson: 'Sivaranjini (Office Admin)', phone: '+91 96004 20916' },
+      'SHIVAA': { contactPerson: 'Pavithra (MD)', phone: '+91 86106 04581' },
+    };
+
+    let matchedContact = null;
+    for (const [key, info] of Object.entries(contactMap)) {
+      if (cleanVendorName.toUpperCase().includes(key)) {
+        matchedContact = info;
+        break;
+      }
+    }
+
     // 1. Upsert Supplier
     const supplier = await prisma.supplier.upsert({
       where: { gstNumber: cleanGst },
       update: {
         companyName: cleanVendorName,
         address: address.trim(),
+        contactPerson: matchedContact ? matchedContact.contactPerson : undefined,
+        phone: matchedContact ? matchedContact.phone : undefined,
       },
       create: {
         companyName: cleanVendorName,
         gstNumber: cleanGst,
-        phone: '+91 98422 ' + String(Math.floor(10000 + Math.random() * 90000)),
+        phone: matchedContact ? matchedContact.phone : '+91 98422 ' + String(Math.floor(10000 + Math.random() * 90000)),
+        contactPerson: matchedContact ? matchedContact.contactPerson : null,
         email: null,
         address: address.trim(),
         rating: Number((4.0 + (hashString(cleanVendorName) % 10) / 10).toFixed(1)),
