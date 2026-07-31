@@ -132,7 +132,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             )}
 
             {/* Current User Session Badge */}
-            <div className="flex items-center space-x-1.5 bg-slate-100 p-1 pl-2.5 rounded-xl border border-slate-200 text-xs">
+            <div className="flex items-center space-x-2 bg-slate-100 p-1.5 pl-3 rounded-xl border border-slate-200 text-xs">
               <div className="flex items-center space-x-1.5 font-extrabold text-slate-800">
                 {isAdmin ? (
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
@@ -140,15 +140,6 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                   <User className="h-4 w-4 text-slate-600" />
                 )}
                 <span>{user?.username || 'Employee'}</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-black ${
-                    isAdmin
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : 'bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {user?.role || 'EMPLOYEE'}
-                </span>
               </div>
 
               <button
