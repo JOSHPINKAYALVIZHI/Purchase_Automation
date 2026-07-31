@@ -24,6 +24,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { normalizeCategory } from '@/lib/normalizeCategory';
+import { useAuth } from '@/lib/AuthContext';
 
 interface CartItem {
   id: string;
@@ -43,6 +44,9 @@ interface CartItem {
 }
 
 export function SimpleProductComparer() {
+  const { user, sendRequestToAdmin } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -374,6 +378,20 @@ export function SimpleProductComparer() {
   // Final Order Now Execution from Cart
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+
+    if (!isAdmin) {
+      sendRequestToAdmin(cart, cartSummary.grandTotal);
+      setOrderSuccessMsg(
+        `✅ Procurement Request sent to Admin for approval! (${cartSummary.totalItemsCount} items, ₹${cartSummary.grandTotal.toLocaleString('en-IN')})`
+      );
+      setTimeout(() => {
+        setCart([]);
+        setShowCartDrawer(false);
+        setOrderSuccessMsg(null);
+      }, 2500);
+      return;
+    }
+
     try {
       // Create PO for first vendor group
       const firstVendorItem = cart[0];
@@ -382,7 +400,7 @@ export function SimpleProductComparer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           supplierId: firstVendorItem.supplierId,
-          createdById: 'manager-id',
+          createdById: user?.username || 'Admin',
           items: cart.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -394,7 +412,7 @@ export function SimpleProductComparer() {
       const json = await res.json();
       if (json.success) {
         setOrderSuccessMsg(
-          `Purchase Order ${json.data.poNumber} Placed Successfully! Total: ₹${json.data.totalAmount.toLocaleString('en-IN')}`
+          `Purchase Order ${json.data.poNumber} Placed & Logged! Total: ₹${json.data.totalAmount.toLocaleString('en-IN')}`
         );
         setTimeout(() => {
           setCart([]);
@@ -498,7 +516,7 @@ export function SimpleProductComparer() {
 
         {selectedCategory === 'ALL' && !search.trim() ? (
           <div className="py-6 text-center text-slate-500 text-xs font-semibold bg-white rounded-xl border border-slate-200 shadow-sm">
-            💡 Select a Category from the dropdown above to view available products.
+             Select a Category from the dropdown above to view available products.
           </div>
         ) : filteredProducts.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 max-h-56 overflow-y-auto p-1">
@@ -823,13 +841,21 @@ export function SimpleProductComparer() {
                   </div>
                 </div>
 
-                {/* Final Order Now Button */}
+                {/* Final Order Now / Request Approval Button */}
                 <button
                   onClick={handleCheckout}
-                  className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/25 transition flex items-center justify-center space-x-2"
+                  className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center space-x-2 ${
+                    isAdmin
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25'
+                      : 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/25'
+                  }`}
                 >
                   <CheckCircle2 className="h-5 w-5" />
-                  <span>Order Now (Generate Purchase Order)</span>
+                  <span>
+                    {isAdmin
+                      ? 'Order Now (Approve & Generate Purchase Order)'
+                      : 'Send Procurement Request to Admin for Approval'}
+                  </span>
                 </button>
               </div>
             )}

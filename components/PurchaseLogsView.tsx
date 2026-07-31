@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, FileSpreadsheet, Filter, Download, ArrowUpDown } from 'lucide-react';
+import { Search, FileSpreadsheet, Filter, Download, ArrowUpDown, CheckSquare, Square } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 export function PurchaseLogsView() {
+  const { purchaseLogStatuses, toggleLogStatus } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
@@ -88,6 +90,7 @@ export function PurchaseLogsView() {
       'With GST Rate',
       'Total Amount',
       'Discount',
+      'Status',
     ];
 
     const rows = filteredLogs.map((l) => [
@@ -104,6 +107,7 @@ export function PurchaseLogsView() {
       l.effectivePrice || 0,
       l.totalAmount || 0,
       `"${l.discount || ''}"`,
+      `"${purchaseLogStatuses[l.id] || 'SENT'}"`,
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
@@ -171,7 +175,8 @@ export function PurchaseLogsView() {
             <table className="w-full text-left text-xs">
               <thead className="sticky top-0 bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 text-[11px] z-10">
                 <tr>
-                  <th className="py-3.5 px-4">Invoice No</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-3">Invoice No</th>
                   <th className="py-3.5 px-3">Date</th>
                   <th className="py-3.5 px-3">Vendor / Company</th>
                   <th className="py-3.5 px-3">Category</th>
@@ -186,22 +191,44 @@ export function PurchaseLogsView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-[11px]">
-                {filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 px-4 font-mono font-bold text-emerald-700">{log.invoiceNo}</td>
-                    <td className="py-3 px-3 text-slate-500">{log.date}</td>
-                    <td className="py-3 px-3 font-extrabold text-slate-900">{log.supplierName}</td>
-                    <td className="py-3 px-3 text-slate-600 font-semibold">{log.category}</td>
-                    <td className="py-3 px-3 font-mono text-slate-600">{log.hsn}</td>
-                    <td className="py-3 px-3 font-bold text-slate-800">{log.productName}</td>
-                    <td className="py-3 px-3 text-slate-600">{log.specification}</td>
-                    <td className="py-3 px-3 font-semibold text-slate-800">{log.brand}</td>
-                    <td className="py-3 px-3 font-semibold text-slate-900">₹{log.basePrice.toLocaleString('en-IN')}</td>
-                    <td className="py-3 px-3 text-slate-600">{log.gstPercentage}%</td>
-                    <td className="py-3 px-3 font-black text-emerald-700">₹{log.effectivePrice.toLocaleString('en-IN')}</td>
-                    <td className="py-3 px-3 font-bold text-emerald-600">{log.discount}</td>
-                  </tr>
-                ))}
+                {filteredLogs.map((log) => {
+                  const isReceived = (purchaseLogStatuses[log.id] || 'SENT') === 'RECEIVED';
+                  return (
+                    <tr key={log.id} className="hover:bg-slate-50 transition">
+                      {/* Checkbox Status Column */}
+                      <td className="py-3 px-3">
+                        <button
+                          onClick={() => toggleLogStatus(log.id)}
+                          className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition flex items-center space-x-1.5 border shadow-sm ${
+                            isReceived
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
+                              : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isReceived}
+                            onChange={() => toggleLogStatus(log.id)}
+                            className="h-3.5 w-3.5 accent-emerald-600 rounded cursor-pointer"
+                          />
+                          <span>{isReceived ? 'RECEIVED' : 'SENT'}</span>
+                        </button>
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-emerald-700">{log.invoiceNo}</td>
+                      <td className="py-3 px-3 text-slate-500">{log.date}</td>
+                      <td className="py-3 px-3 font-extrabold text-slate-900">{log.supplierName}</td>
+                      <td className="py-3 px-3 text-slate-600 font-semibold">{log.category}</td>
+                      <td className="py-3 px-3 font-mono text-slate-600">{log.hsn}</td>
+                      <td className="py-3 px-3 font-bold text-slate-800">{log.productName}</td>
+                      <td className="py-3 px-3 text-slate-600">{log.specification}</td>
+                      <td className="py-3 px-3 font-semibold text-slate-800">{log.brand}</td>
+                      <td className="py-3 px-3 font-semibold text-slate-900">₹{log.basePrice.toLocaleString('en-IN')}</td>
+                      <td className="py-3 px-3 text-slate-600">{log.gstPercentage}%</td>
+                      <td className="py-3 px-3 font-black text-emerald-700">₹{log.effectivePrice.toLocaleString('en-IN')}</td>
+                      <td className="py-3 px-3 font-bold text-emerald-600">{log.discount}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
