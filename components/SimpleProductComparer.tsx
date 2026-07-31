@@ -440,15 +440,6 @@ export function SimpleProductComparer() {
           />
         </div>
 
-        {/* Add Product Modal Trigger Button */}
-        <button
-          onClick={handleOpenAddProductModal}
-          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition flex items-center space-x-1.5 shrink-0 shadow-sm shadow-emerald-500/20 w-full sm:w-auto justify-center"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Product</span>
-        </button>
-
         {/* Balanced Cart Trigger Button */}
         <button
           onClick={() => setShowCartDrawer(true)}
@@ -477,14 +468,25 @@ export function SimpleProductComparer() {
       {/* 2. Filtered Product Buttons */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Available Products ({filteredProducts.length})
-          </span>
-          {selectedCategory !== 'ALL' && (
-            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
-              Category: {selectedCategory}
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Available Products ({filteredProducts.length})
             </span>
-          )}
+            {selectedCategory !== 'ALL' && (
+              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                Category: {selectedCategory}
+              </span>
+            )}
+          </div>
+
+          {/* Add Product Button Moved Down */}
+          <button
+            onClick={handleOpenAddProductModal}
+            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center space-x-1.5 shadow-sm shadow-emerald-500/20"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>+ Add Product</span>
+          </button>
         </div>
 
         {filteredProducts.length > 0 ? (
