@@ -106,9 +106,6 @@ export function SimpleProductComparer() {
       const json = await res.json();
       if (json.success && json.data.length > 0) {
         setProducts(json.data);
-        if (!selectedProduct) {
-          setSelectedProduct(json.data[0]);
-        }
       }
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -239,13 +236,18 @@ export function SimpleProductComparer() {
   }, [products, selectedCategory, search]);
 
   useEffect(() => {
+    if (selectedCategory === 'ALL' && !search.trim()) {
+      setSelectedProduct(null);
+      return;
+    }
+
     if (
       filteredProducts.length > 0 &&
       (!selectedProduct || !filteredProducts.some((p) => p.id === selectedProduct.id))
     ) {
       setSelectedProduct(filteredProducts[0]);
     }
-  }, [filteredProducts, selectedProduct]);
+  }, [filteredProducts, selectedCategory, search]);
 
   // Fetch offers for selected product
   useEffect(() => {
