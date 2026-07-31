@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSuppliers, createSupplier } from '@/lib/actions/suppliers';
+import { getSuppliers, createSupplier, updateSupplierContact } from '@/lib/actions/suppliers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,5 +21,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: supplier }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, contactPerson, phone, email } = body;
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Supplier ID is required' }, { status: 400 });
+    }
+    const updated = await updateSupplierContact(id, { contactPerson, phone, email });
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -23,7 +23,7 @@ model Supplier {
   id            String   @id @default(uuid())
   companyName   String
   gstNumber     String   @unique
-  phone         String
+  phone         String?
   email         String?
   address       String
   contactPerson String?

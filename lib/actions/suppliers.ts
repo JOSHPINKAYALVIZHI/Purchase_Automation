@@ -149,3 +149,14 @@ export async function compareSupplierPrices(productId: string) {
     },
   };
 }
+
+export async function updateSupplierContact(id: string, data: { contactPerson?: string | null; phone?: string | null; email?: string | null }) {
+  return await prisma.supplier.update({
+    where: { id },
+    data: {
+      contactPerson: data.contactPerson !== undefined ? data.contactPerson : undefined,
+      phone: data.phone !== undefined ? data.phone : undefined,
+      email: data.email !== undefined ? data.email : undefined,
+    },
+  });
+}

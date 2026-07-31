@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   FileSpreadsheet,
   Users,
-  Layers,
+  PhoneCall,
   BarChart3,
   Zap,
 } from 'lucide-react';
@@ -20,7 +20,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'purchase_logs', label: 'Purchase Logs', icon: FileSpreadsheet },
     { id: 'suppliers', label: 'Suppliers', icon: Users },
-    { id: 'others', label: 'Others', icon: Layers },
+    { id: 'others', label: 'Contact Details', icon: PhoneCall },
     { id: 'analysis', label: 'Analysis', icon: BarChart3 },
   ];
 
@@ -30,17 +30,15 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <div className="flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 font-black">
-              <Zap className="h-5 w-5 fill-white" />
-            </div>
-            <div>
-              <span className="font-extrabold text-slate-900 text-lg tracking-tight block">
-                Procure<span className="text-emerald-600">AI</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold block uppercase tracking-wider -mt-1">
-                Solar Procurement Platform
-              </span>
-            </div>
+            <img
+              src="/jesuans_logo.png"
+              alt="JESUANS Solar Make's Bright"
+              className="h-10 w-auto object-contain drop-shadow-sm"
+            />
+            <div className="h-6 w-[1px] bg-slate-300 hidden sm:block" />
+            <span className="font-black text-emerald-700 text-base sm:text-xl tracking-tight hidden sm:block">
+              Purchase Tracker
+            </span>
           </div>
 
           {/* Top Desktop Navigation Menu Bar */}
