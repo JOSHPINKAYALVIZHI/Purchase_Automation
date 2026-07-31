@@ -846,7 +846,7 @@ export function SimpleProductComparer() {
 
             <div className="space-y-3 text-xs">
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] flex justify-between">
-                <span>GSTIN: <strong className="text-slate-900">{logCompanyOffer.supplier.gstNumber}</strong></span>
+                <span><strong className="text-slate-900">{logCompanyOffer.supplier.contactPerson || logCompanyOffer.supplier.companyName}</strong></span>
                 <span className="text-emerald-700 font-bold">✅ Static Historical Record</span>
               </div>
 

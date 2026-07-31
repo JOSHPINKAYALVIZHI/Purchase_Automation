@@ -186,7 +186,8 @@ export function SuppliersView() {
                     </span>
                   </div>
                   <p className="text-xs text-emerald-700 font-bold font-mono mt-0.5">
-                    GSTIN: {selectedSupplier.gstNumber} • {selectedSupplier.phone}
+                    {selectedSupplier.contactPerson && selectedSupplier.contactPerson.trim() ? `${selectedSupplier.contactPerson} • ` : ''}
+                    {selectedSupplier.phone}
                     {selectedSupplier.email && selectedSupplier.email.trim() ? ` • ${selectedSupplier.email}` : ''}
                   </p>
                 </div>
