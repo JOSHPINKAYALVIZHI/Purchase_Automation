@@ -54,12 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedSession) {
       try {
         setUser(JSON.parse(savedSession));
-      } catch (e) {}
+      } catch (e) {
+        setUser(null);
+      }
     } else {
-      // Default to Employee if no session
-      const defaultEmployee: UserSession = { username: 'Employee', role: 'EMPLOYEE' };
-      setUser(defaultEmployee);
-      localStorage.setItem('jesuans_user_session', JSON.stringify(defaultEmployee));
+      setUser(null);
     }
 
     // Load saved pending requests

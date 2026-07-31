@@ -152,11 +152,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
               </div>
 
               <button
-                onClick={() => setShowLoginModal(true)}
-                className="p-1.5 hover:bg-slate-200 text-slate-600 rounded-lg transition"
-                title="Switch Account / Login"
+                onClick={logout}
+                className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition flex items-center space-x-1"
+                title="Sign Out"
               >
-                <KeyRound className="h-3.5 w-3.5" />
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline text-[10px] font-extrabold">Sign Out</span>
               </button>
             </div>
           </div>

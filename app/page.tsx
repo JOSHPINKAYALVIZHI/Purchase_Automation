@@ -1,37 +1,50 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AuthProvider } from '@/lib/AuthContext';
+import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { SimpleProductComparer } from '@/components/SimpleProductComparer';
 import { PurchaseLogsView } from '@/components/PurchaseLogsView';
 import { SuppliersView } from '@/components/SuppliersView';
 import { OthersView } from '@/components/OthersView';
 import { AnalysisView } from '@/components/AnalysisView';
+import { LoginScreen } from '@/components/LoginScreen';
 
-export default function Home() {
+function MainApp() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
+  // If user is not logged in, block and show full screen login screen
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col">
+      {/* Top Menu Navigation Bar */}
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Main Tab Content */}
+      <main className="flex-1 py-6">
+        {activeTab === 'dashboard' && <SimpleProductComparer />}
+        {activeTab === 'purchase_logs' && <PurchaseLogsView />}
+        {activeTab === 'suppliers' && <SuppliersView />}
+        {activeTab === 'others' && <OthersView />}
+        {activeTab === 'analysis' && user.role === 'ADMIN' && <AnalysisView />}
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        PURCHASE TRACKER • Powered by JESUANS ENGINEERING
+      </footer>
+    </div>
+  );
+}
+
+export default function Home() {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col">
-        {/* Top Menu Navigation Bar */}
-        <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        {/* Main Tab Content */}
-        <main className="flex-1 py-6">
-          {activeTab === 'dashboard' && <SimpleProductComparer />}
-          {activeTab === 'purchase_logs' && <PurchaseLogsView />}
-          {activeTab === 'suppliers' && <SuppliersView />}
-          {activeTab === 'others' && <OthersView />}
-          {activeTab === 'analysis' && <AnalysisView />}
-        </main>
-
-        {/* Footer */}
-        <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-          PURCHASE TRACKER • Powered by JESUANS ENGINEERING
-        </footer>
-      </div>
+      <MainApp />
     </AuthProvider>
   );
 }
