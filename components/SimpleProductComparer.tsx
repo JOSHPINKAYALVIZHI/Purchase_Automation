@@ -126,8 +126,10 @@ export function SimpleProductComparer() {
       if (json.success) {
         const sups = json.data || [];
         setAllSuppliersList(sups);
-        if (sups.length > 0 && !selectedSupplierId) {
+        if (sups.length > 0) {
           setSelectedSupplierId(sups[0].id);
+        } else {
+          setSelectedSupplierId('OTHER');
         }
       }
     } catch (err) {
@@ -1194,7 +1196,7 @@ export function SimpleProductComparer() {
                 </div>
 
                 {/* Conditional Fields if "Other / Add New Company" is selected */}
-                {selectedSupplierId === 'OTHER' && (
+                {(selectedSupplierId === 'OTHER' || selectedSupplierId === '' || allSuppliersList.length === 0) && (
                   <div className="bg-purple-50/70 border border-purple-200 p-4 rounded-2xl space-y-3 animate-in fade-in duration-150">
                     <div className="text-xs font-extrabold text-purple-900 flex items-center gap-1 border-b border-purple-200 pb-2">
                       <User className="h-3.5 w-3.5 text-purple-600" />
