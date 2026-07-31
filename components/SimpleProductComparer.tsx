@@ -475,7 +475,9 @@ export function SimpleProductComparer() {
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center space-x-2">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Available Products ({filteredProducts.length})
+              {selectedCategory === 'ALL' && !search.trim()
+                ? 'Select a Category'
+                : `Available Products (${filteredProducts.length})`}
             </span>
             {selectedCategory !== 'ALL' && (
               <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
@@ -494,7 +496,11 @@ export function SimpleProductComparer() {
           </button>
         </div>
 
-        {filteredProducts.length > 0 ? (
+        {selectedCategory === 'ALL' && !search.trim() ? (
+          <div className="py-6 text-center text-slate-500 text-xs font-semibold bg-white rounded-xl border border-slate-200 shadow-sm">
+            💡 Select a Category from the dropdown above to view available products.
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 max-h-56 overflow-y-auto p-1">
             {filteredProducts.map((p) => {
               const isSelected = selectedProduct?.id === p.id;
