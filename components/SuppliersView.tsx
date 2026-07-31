@@ -106,9 +106,6 @@ export function SuppliersView() {
                       <h3 className="font-extrabold text-slate-900 text-sm leading-tight group-hover:text-blue-600 transition">
                         {supplier.companyName}
                       </h3>
-                      <span className="text-[11px] font-mono text-blue-600 font-bold">
-                        GST: {supplier.gstNumber}
-                      </span>
                     </div>
                   </div>
 
