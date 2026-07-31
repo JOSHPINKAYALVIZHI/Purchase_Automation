@@ -19,6 +19,8 @@ import {
   Plus,
   Minus,
   Check,
+  Building2,
+  User,
 } from 'lucide-react';
 import { normalizeCategory } from '@/lib/normalizeCategory';
 
@@ -61,25 +63,146 @@ export function SimpleProductComparer() {
   // Explanation Modal State for Ratings & Delivery Days
   const [showMetricsHelp, setShowMetricsHelp] = useState<boolean>(false);
 
-  // Load products from database
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/products');
-        const json = await res.json();
-        if (json.success && json.data.length > 0) {
-          setProducts(json.data);
+  // Add Product / Quote Modal State
+  const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
+  const [allSuppliersList, setAllSuppliersList] = useState<any[]>([]);
+  const [submittingProduct, setSubmittingProduct] = useState<boolean>(false);
+  const [addProductSuccessMsg, setAddProductSuccessMsg] = useState<string>('');
+
+  // Add Product Form State
+  const [formProductName, setFormProductName] = useState<string>('');
+  const [formCategory, setFormCategory] = useState<string>('Solar Equipment');
+  const [formCustomCategory, setFormCustomCategory] = useState<string>('');
+  const [formBrand, setFormBrand] = useState<string>('');
+  const [formSpec, setFormSpec] = useState<string>('');
+  const [formHsn, setFormHsn] = useState<string>('');
+  const [formUnit, setFormUnit] = useState<string>('Pcs');
+  const [formBasePrice, setFormBasePrice] = useState<string>('');
+  const [formGstPercentage, setFormGstPercentage] = useState<string>('18');
+  const [formInvoiceNo, setFormInvoiceNo] = useState<string>('');
+  const [formDiscount, setFormDiscount] = useState<string>('');
+
+  // Company Selection State
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+  const [newCompanyName, setNewCompanyName] = useState<string>('');
+  const [newGstNumber, setNewGstNumber] = useState<string>('');
+  const [newAddress, setNewAddress] = useState<string>('');
+  const [newPhone, setNewPhone] = useState<string>('');
+  const [newEmail, setNewEmail] = useState<string>('');
+  const [newContactPerson, setNewContactPerson] = useState<string>('');
+
+  // Reusable loadProducts function
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/products');
+      const json = await res.json();
+      if (json.success && json.data.length > 0) {
+        setProducts(json.data);
+        if (!selectedProduct) {
           setSelectedProduct(json.data[0]);
         }
-      } catch (err) {
-        console.error('Error fetching products:', err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadProducts();
   }, []);
+
+  // Fetch suppliers list when Add Product modal opens
+  const fetchSuppliersForModal = async () => {
+    try {
+      const res = await fetch('/api/suppliers');
+      const json = await res.json();
+      if (json.success) {
+        const sups = json.data || [];
+        setAllSuppliersList(sups);
+        if (sups.length > 0 && !selectedSupplierId) {
+          setSelectedSupplierId(sups[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching suppliers list:', err);
+    }
+  };
+
+  const handleOpenAddProductModal = () => {
+    fetchSuppliersForModal();
+    setShowAddProductModal(true);
+  };
+
+  const handleAddProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formProductName.trim() || !formBasePrice) {
+      alert('Please enter Product Name and Base Price.');
+      return;
+    }
+
+    if (selectedSupplierId === 'OTHER' && !newCompanyName.trim()) {
+      alert('Please enter New Company Name.');
+      return;
+    }
+
+    try {
+      setSubmittingProduct(true);
+      const finalCategory = formCategory === 'CUSTOM' ? formCustomCategory : formCategory;
+
+      const payload = {
+        name: formProductName.trim(),
+        category: finalCategory.trim() || 'Solar Equipment',
+        brand: formBrand.trim() || 'Standard Solar',
+        specification: formSpec.trim() || `${formProductName.trim()} - ${formBrand.trim() || 'Standard'}`,
+        hsn: formHsn.trim() || '8541',
+        unit: formUnit,
+        basePrice: parseFloat(formBasePrice),
+        gstPercentage: parseFloat(formGstPercentage) || 18,
+        invoiceNo: formInvoiceNo.trim() || undefined,
+        discount: formDiscount.trim() || undefined,
+        supplierId: selectedSupplierId,
+        isNewSupplier: selectedSupplierId === 'OTHER',
+        newCompanyName: newCompanyName.trim(),
+        newGstNumber: newGstNumber.trim(),
+        newAddress: newAddress.trim(),
+        newPhone: newPhone.trim(),
+        newEmail: newEmail.trim(),
+        newContactPerson: newContactPerson.trim(),
+      };
+
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setAddProductSuccessMsg('✅ Product & Quote added successfully!');
+        setTimeout(() => setAddProductSuccessMsg(''), 4000);
+        await loadProducts();
+        setFormProductName('');
+        setFormBasePrice('');
+        setFormBrand('');
+        setFormSpec('');
+        setNewCompanyName('');
+        setNewAddress('');
+        setNewPhone('');
+        setNewContactPerson('');
+        setShowAddProductModal(false);
+      } else {
+        alert(json.error || 'Failed to add product');
+      }
+    } catch (err: any) {
+      console.error('Error submitting product:', err);
+      alert(err?.message || 'Error creating product');
+    } finally {
+      setSubmittingProduct(false);
+    }
+  };
 
   // Compute unique Categories dynamically with clean normalization
   const uniqueCategories = useMemo(() => {
@@ -317,6 +440,15 @@ export function SimpleProductComparer() {
           />
         </div>
 
+        {/* Add Product Modal Trigger Button */}
+        <button
+          onClick={handleOpenAddProductModal}
+          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition flex items-center space-x-1.5 shrink-0 shadow-sm shadow-emerald-500/20 w-full sm:w-auto justify-center"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Product</span>
+        </button>
+
         {/* Balanced Cart Trigger Button */}
         <button
           onClick={() => setShowCartDrawer(true)}
@@ -331,6 +463,16 @@ export function SimpleProductComparer() {
           )}
         </button>
       </div>
+
+      {/* Success Notification Banner */}
+      {addProductSuccessMsg && (
+        <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-in fade-in duration-150">
+          <span>{addProductSuccessMsg}</span>
+          <button onClick={() => setAddProductSuccessMsg('')}>
+            <X className="h-4 w-4 text-emerald-600" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Filtered Product Buttons */}
       <div className="space-y-2">
@@ -795,6 +937,300 @@ export function SimpleProductComparer() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 🚀 ADD NEW PRODUCT / QUOTE MODAL WITH COMPANY SELECTION  */}
+      {/* ========================================================= */}
+      {showAddProductModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-8">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <div className="h-8 w-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base leading-snug">Add Product / Supplier Quote</h3>
+                  <p className="text-xs text-slate-400">Add new material or quote to compare instantly</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowAddProductModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Form Content */}
+            <form onSubmit={handleAddProductSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+              {/* 1. Product Details Section */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase text-blue-600 tracking-wider flex items-center gap-1">
+                  <Zap className="h-3.5 w-3.5" /> Product Information
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Product Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formProductName}
+                      onChange={(e) => setFormProductName(e.target.value)}
+                      placeholder="e.g. 100KW Solar Inverter"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    >
+                      {uniqueCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      <option value="CUSTOM">+ Other Category...</option>
+                    </select>
+                  </div>
+                </div>
+
+                {formCategory === 'CUSTOM' && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Custom Category Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formCustomCategory}
+                      onChange={(e) => setFormCustomCategory(e.target.value)}
+                      placeholder="Enter new category name..."
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Make / Brand</label>
+                    <input
+                      type="text"
+                      value={formBrand}
+                      onChange={(e) => setFormBrand(e.target.value)}
+                      placeholder="e.g. Havells / Polycab"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">HSN Code</label>
+                    <input
+                      type="text"
+                      value={formHsn}
+                      onChange={(e) => setFormHsn(e.target.value)}
+                      placeholder="e.g. 8541"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Unit</label>
+                    <select
+                      value={formUnit}
+                      onChange={(e) => setFormUnit(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    >
+                      <option value="Pcs">Pcs</option>
+                      <option value="Nos">Nos</option>
+                      <option value="Mtr">Mtr</option>
+                      <option value="Set">Set</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Pricing & GST Details Section */}
+              <div className="space-y-3 pt-2 border-t border-slate-200">
+                <h4 className="text-xs font-black uppercase text-emerald-600 tracking-wider flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Pricing & Rate Details
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Base Rate (₹) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formBasePrice}
+                      onChange={(e) => setFormBasePrice(e.target.value)}
+                      placeholder="e.g. 4500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">GST %</label>
+                    <select
+                      value={formGstPercentage}
+                      onChange={(e) => setFormGstPercentage(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    >
+                      <option value="18">18% GST</option>
+                      <option value="12">12% GST</option>
+                      <option value="5">5% GST</option>
+                      <option value="0">0% GST (Exempt)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Discount Rate (Optional)</label>
+                    <input
+                      type="text"
+                      value={formDiscount}
+                      onChange={(e) => setFormDiscount(e.target.value)}
+                      placeholder="e.g. 5% Special"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Company Selection & New Vendor Details Section */}
+              <div className="space-y-3 pt-2 border-t border-slate-200">
+                <h4 className="text-xs font-black uppercase text-purple-600 tracking-wider flex items-center gap-1">
+                  <Building2 className="h-3.5 w-3.5" /> Supplier / Company Name
+                </h4>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Select Company <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedSupplierId}
+                    onChange={(e) => setSelectedSupplierId(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-slate-900 focus:outline-none focus:border-blue-600 cursor-pointer"
+                  >
+                    {allSuppliersList.map((sup) => (
+                      <option key={sup.id} value={sup.id}>
+                        {sup.companyName}
+                      </option>
+                    ))}
+                    <option value="OTHER">➕ Other / Add New Company...</option>
+                  </select>
+                </div>
+
+                {/* Conditional Fields if "Other / Add New Company" is selected */}
+                {selectedSupplierId === 'OTHER' && (
+                  <div className="bg-purple-50/70 border border-purple-200 p-4 rounded-2xl space-y-3 animate-in fade-in duration-150">
+                    <div className="text-xs font-extrabold text-purple-900 flex items-center gap-1 border-b border-purple-200 pb-2">
+                      <User className="h-3.5 w-3.5 text-purple-600" />
+                      <span>New Company & Contact Details</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Company Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newCompanyName}
+                          onChange={(e) => setNewCompanyName(e.target.value)}
+                          placeholder="e.g. SKYLINE SOLAR SOLUTIONS"
+                          className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                        <input
+                          type="text"
+                          value={newPhone}
+                          onChange={(e) => setNewPhone(e.target.value)}
+                          placeholder="e.g. +91 98422 12345"
+                          className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Company Address</label>
+                      <input
+                        type="text"
+                        value={newAddress}
+                        onChange={(e) => setNewAddress(e.target.value)}
+                        placeholder="e.g. 104 Industrial Estate, Coimbatore"
+                        className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-600"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Contact Person Name</label>
+                        <input
+                          type="text"
+                          value={newContactPerson}
+                          onChange={(e) => setNewContactPerson(e.target.value)}
+                          placeholder="e.g. Rajesh Kumar (Purchase Mgr)"
+                          className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-600"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">GSTIN Number (Optional)</label>
+                        <input
+                          type="text"
+                          value={newGstNumber}
+                          onChange={(e) => setNewGstNumber(e.target.value)}
+                          placeholder="e.g. 33AAACG123456789 (Auto if empty)"
+                          className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAddProductModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingProduct}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition flex items-center space-x-2 disabled:opacity-50"
+                >
+                  {submittingProduct ? (
+                    <span>Saving...</span>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Save Product & Quote</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

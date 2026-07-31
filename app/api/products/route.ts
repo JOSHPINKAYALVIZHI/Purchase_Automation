@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProducts, createProduct } from '@/lib/actions/products';
+import { getProducts, addFullProductQuote } from '@/lib/actions/products';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,9 +19,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const product = await createProduct(body);
-    return NextResponse.json({ success: true, data: product }, { status: 201 });
+    const result = await addFullProductQuote(body);
+    return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    console.error('❌ POST /api/products Error:', error);
+    return NextResponse.json({ success: false, error: error?.message || String(error) }, { status: 400 });
   }
 }

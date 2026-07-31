@@ -14,6 +14,7 @@ import {
   X,
   ChevronRight,
   Zap,
+  User,
 } from 'lucide-react';
 
 export function SuppliersView() {
@@ -123,6 +124,14 @@ export function SuppliersView() {
                     <div className="flex items-center space-x-2">
                       <Mail className="h-3.5 w-3.5 text-slate-500 shrink-0" />
                       <span className="text-slate-600 truncate">{supplier.email}</span>
+                    </div>
+                  )}
+
+                  {/* Render Contact Person if available */}
+                  {supplier.contactPerson && supplier.contactPerson.trim() && (
+                    <div className="flex items-center space-x-2 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                      <User className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                      <span className="font-bold text-[11px]">Contact: {supplier.contactPerson}</span>
                     </div>
                   )}
 
