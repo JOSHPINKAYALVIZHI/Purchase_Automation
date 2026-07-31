@@ -281,36 +281,7 @@ export function SimpleProductComparer() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Clean Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-left space-y-1">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-            <span>⚡ ProcureAI • Category Filter & Dynamic Price Finder</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Select Category & Material
-          </h1>
-          <p className="text-slate-600 text-xs sm:text-sm">
-            Compare prices ranked <strong>Lowest to Highest</strong>. Edit rates on the fly & add to cart.
-          </p>
-        </div>
-
-        {/* Floating Cart Trigger Button */}
-        <button
-          onClick={() => setShowCartDrawer(true)}
-          className="relative px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-md shadow-blue-500/20"
-        >
-          <ShoppingCart className="h-4.5 w-4.5" />
-          <span>Cart ({cartSummary.totalItemsCount})</span>
-          {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-slate-900 text-white font-black text-[10px] flex items-center justify-center border-2 border-white">
-              {cart.length}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* 1. Category Dropdown & Search Bar Container */}
+      {/* Category Dropdown, Search Bar & Cart Button Row */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         {/* Category Dropdown Select */}
         <div className="relative w-full sm:w-64 shrink-0">
@@ -345,6 +316,20 @@ export function SimpleProductComparer() {
             className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
           />
         </div>
+
+        {/* Cart Trigger Button */}
+        <button
+          onClick={() => setShowCartDrawer(true)}
+          className="relative px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-md shadow-blue-500/20 w-full sm:w-auto justify-center"
+        >
+          <ShoppingCart className="h-4.5 w-4.5" />
+          <span>Cart ({cartSummary.totalItemsCount})</span>
+          {cart.length > 0 && (
+            <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-slate-900 text-white font-black text-[10px] flex items-center justify-center border-2 border-white">
+              {cart.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* 2. Filtered Product Buttons */}
