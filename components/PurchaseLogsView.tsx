@@ -72,33 +72,53 @@ export function PurchaseLogsView() {
     });
   }, [logs, categoryFilter, search]);
 
+  const handleExportCSV = () => {
+    if (!filteredLogs || filteredLogs.length === 0) return;
+    const headers = [
+      'Invoice No',
+      'Date',
+      'Vendor / Company',
+      'Category',
+      'HSN Code',
+      'Material / Item Name',
+      'Specification',
+      'Make / Brand',
+      'Base Rate',
+      'GST %',
+      'With GST Rate',
+      'Total Amount',
+      'Discount',
+    ];
+
+    const rows = filteredLogs.map((l) => [
+      `"${l.invoiceNo || ''}"`,
+      `"${l.date || ''}"`,
+      `"${(l.supplierName || '').replace(/"/g, '""')}"`,
+      `"${(l.category || '').replace(/"/g, '""')}"`,
+      `"${l.hsn || ''}"`,
+      `"${(l.productName || '').replace(/"/g, '""')}"`,
+      `"${(l.specification || '').replace(/"/g, '""')}"`,
+      `"${(l.brand || '').replace(/"/g, '""')}"`,
+      l.basePrice || 0,
+      l.gstPercentage || 18,
+      l.effectivePrice || 0,
+      l.totalAmount || 0,
+      `"${l.discount || ''}"`,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Purchase_Logs_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-2">
-            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Google Sheet Vendor List Table Log</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Purchase Logs</h1>
-          <p className="text-slate-600 text-xs sm:text-sm">
-            All detailed historical purchase records imported from Google Sheet ({filteredLogs.length} Records)
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => alert('Exporting purchase log CSV...')}
-            className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs border border-emerald-200 transition flex items-center space-x-1.5"
-          >
-            <Download className="h-4 w-4" />
-            <span>Export CSV</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Filters Container */}
+      {/* Category Dropdown, Search Bar & Export CSV Button Row */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         {/* Category Dropdown */}
         <div className="relative w-full sm:w-64 shrink-0">
@@ -106,7 +126,7 @@ export function PurchaseLogsView() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold text-xs sm:text-sm rounded-xl pl-10 pr-8 py-2.5 appearance-none focus:outline-none focus:border-emerald-600"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold text-xs sm:text-sm rounded-xl pl-10 pr-8 py-2.5 appearance-none focus:outline-none focus:border-emerald-600 cursor-pointer"
           >
             <option value="ALL">All Categories ({categories.length})</option>
             {categories.map((cat) => (
@@ -129,6 +149,15 @@ export function PurchaseLogsView() {
             className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600"
           />
         </div>
+
+        {/* Export CSV Button */}
+        <button
+          onClick={handleExportCSV}
+          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-sm shadow-emerald-500/20 w-full sm:w-auto justify-center"
+        >
+          <Download className="h-4 w-4" />
+          <span>Export CSV</span>
+        </button>
       </div>
 
       {/* Purchase Log Table */}
