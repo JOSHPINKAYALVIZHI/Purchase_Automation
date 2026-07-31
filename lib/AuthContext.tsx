@@ -43,12 +43,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState<boolean>(false);
   const [user, setUser] = useState<UserSession | null>(null);
   const [pendingRequests, setPendingRequests] = useState<ProcurementRequest[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [purchaseLogStatuses, setPurchaseLogStatuses] = useState<Record<string, 'SENT' | 'RECEIVED'>>({});
 
   useEffect(() => {
+    setMounted(true);
     // Load saved user session
     const savedSession = localStorage.getItem('jesuans_user_session');
     if (savedSession) {
