@@ -208,9 +208,19 @@ export function SimpleProductComparer() {
     }
   };
 
-  // Compute unique Categories dynamically with clean normalization
+  // Compute unique Categories dynamically with clean normalization & defaults
   const uniqueCategories = useMemo(() => {
-    const cats = new Set<string>();
+    const defaults = [
+      'Inverters',
+      'Solar Panels',
+      'DC Cable',
+      'DCDB Box',
+      'ACDB Box',
+      'Batteries',
+      'Structure MMS',
+      'Solar Equipment',
+    ];
+    const cats = new Set<string>(defaults);
     products.forEach((p) => {
       if (p.category && p.category.trim()) {
         cats.add(normalizeCategory(p.category));
@@ -1055,16 +1065,18 @@ export function SimpleProductComparer() {
                   </div>
                 </div>
 
-                {formCategory === 'CUSTOM' && (
+                {(formCategory === 'CUSTOM' || formCategory === '+ Other Category...') && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Custom Category Name</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Enter Custom Category Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       required
                       value={formCustomCategory}
                       onChange={(e) => setFormCustomCategory(e.target.value)}
-                      placeholder="Enter new category name..."
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                      placeholder="e.g. Solar Inverter, Meter, Cable..."
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-emerald-600"
                     />
                   </div>
                 )}
