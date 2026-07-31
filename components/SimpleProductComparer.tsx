@@ -440,7 +440,7 @@ export function SimpleProductComparer() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Category Dropdown, Search Bar & Cart Button Row */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         {/* Category Dropdown Select */}

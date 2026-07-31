@@ -75,23 +75,23 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
+        <div className="flex items-center justify-between h-20">
           {/* Logo & Brand Title */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3.5">
             <img
               src="/jesuans_logo.png"
               alt="JESUANS Solar Make's Bright"
-              className="h-10 w-auto object-contain drop-shadow-sm"
+              className="h-12 sm:h-14 w-auto object-contain drop-shadow-sm"
             />
-            <div className="h-6 w-[1px] bg-slate-300 hidden sm:block" />
-            <span className="font-black text-emerald-700 text-base sm:text-xl tracking-tight hidden sm:block">
+            <div className="h-8 w-[2px] bg-slate-300 hidden sm:block" />
+            <span className="font-black text-emerald-700 text-xl sm:text-2xl tracking-tight hidden sm:block">
               Purchase Tracker
             </span>
           </div>
 
           {/* Center Navigation Menu */}
-          <nav className="hidden md:flex items-center space-x-1 bg-slate-100/80 p-1 rounded-2xl border border-slate-200">
+          <nav className="hidden lg:flex items-center space-x-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -99,13 +99,13 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+                  className={`px-4.5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 ${
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                      : 'text-slate-700 hover:text-slate-900 hover:bg-white/80'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                  <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -113,18 +113,18 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
           </nav>
 
           {/* Right Header Controls: Admin Approval Badge & User Role Profile Switcher */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {/* Admin Approval Notification Badge */}
             {isAdmin && (
               <button
                 onClick={() => setShowApprovalsModal(true)}
-                className="relative p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition flex items-center space-x-1.5 text-xs font-bold"
+                className="relative px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition flex items-center space-x-2 text-xs sm:text-sm font-extrabold shadow-sm"
                 title="Procurement Approvals"
               >
-                <Bell className="h-4 w-4 text-amber-700" />
+                <Bell className="h-4.5 w-4.5 text-amber-700" />
                 <span className="hidden sm:inline">Requests</span>
                 {pendingCount > 0 && (
-                  <span className="h-5 min-w-[20px] px-1 bg-amber-600 text-white rounded-full text-[10px] font-black flex items-center justify-center animate-pulse">
+                  <span className="h-5 min-w-[22px] px-1.5 bg-amber-600 text-white rounded-full text-[11px] font-black flex items-center justify-center animate-pulse">
                     {pendingCount}
                   </span>
                 )}
@@ -132,23 +132,23 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             )}
 
             {/* Current User Session Badge */}
-            <div className="flex items-center space-x-2 bg-slate-100 p-1.5 pl-3 rounded-xl border border-slate-200 text-xs">
-              <div className="flex items-center space-x-1.5 font-extrabold text-slate-800">
+            <div className="flex items-center space-x-3 bg-slate-100 p-2 pl-3.5 rounded-2xl border border-slate-200 text-xs sm:text-sm shadow-sm">
+              <div className="flex items-center space-x-2 font-black text-slate-900">
                 {isAdmin ? (
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
                 ) : (
-                  <User className="h-4 w-4 text-slate-600" />
+                  <User className="h-5 w-5 text-slate-600" />
                 )}
                 <span>{user?.username || 'Employee'}</span>
               </div>
 
               <button
                 onClick={logout}
-                className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition flex items-center space-x-1"
+                className="px-2.5 py-1 hover:bg-red-100 text-red-700 bg-red-50 border border-red-200 rounded-xl transition flex items-center space-x-1 font-extrabold text-xs"
                 title="Sign Out"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline text-[10px] font-extrabold">Sign Out</span>
+                <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
           </div>

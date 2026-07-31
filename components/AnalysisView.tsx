@@ -292,7 +292,7 @@ export function AnalysisView() {
   }, [monthlyTrendData, maxMonthlyTotal]);
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Date Filter Notification Banner */}
       {(selectedDateStr || selectedMonthStr) && (
         <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 p-3.5 rounded-2xl text-xs font-bold flex items-center justify-between shadow-sm">
