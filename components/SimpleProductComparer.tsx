@@ -20,6 +20,7 @@ import {
   Minus,
   Check,
 } from 'lucide-react';
+import { normalizeCategory } from '@/lib/normalizeCategory';
 
 interface CartItem {
   id: string;
@@ -80,12 +81,12 @@ export function SimpleProductComparer() {
     loadProducts();
   }, []);
 
-  // Compute unique Categories dynamically
+  // Compute unique Categories dynamically with clean normalization
   const uniqueCategories = useMemo(() => {
     const cats = new Set<string>();
     products.forEach((p) => {
       if (p.category && p.category.trim()) {
-        cats.add(p.category.trim());
+        cats.add(normalizeCategory(p.category));
       }
     });
     return Array.from(cats).sort();
@@ -94,13 +95,14 @@ export function SimpleProductComparer() {
   // Filter products by selected category dropdown & search query
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      const pNormCat = normalizeCategory(p.category);
       const matchesCategory =
-        selectedCategory === 'ALL' || p.category.trim() === selectedCategory;
+        selectedCategory === 'ALL' || pNormCat === selectedCategory;
 
       const matchesSearch =
         search === '' ||
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.category.toLowerCase().includes(search.toLowerCase());
+        pNormCat.toLowerCase().includes(search.toLowerCase());
 
       return matchesCategory && matchesSearch;
     });
@@ -349,7 +351,7 @@ export function SimpleProductComparer() {
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Step 1: Select Product ({filteredProducts.length} items available)
+            Available Products ({filteredProducts.length})
           </span>
           {selectedCategory !== 'ALL' && (
             <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
@@ -390,7 +392,6 @@ export function SimpleProductComparer() {
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between px-1 border-b border-slate-200 pb-3">
             <div>
-              <span className="text-xs text-slate-500">Step 2: Compare Prices for</span>
               <h2 className="text-xl font-extrabold text-slate-900">{selectedProduct.name}</h2>
             </div>
 
@@ -462,10 +463,6 @@ export function SimpleProductComparer() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
-                            GST: <strong className="text-slate-700">{offer.supplier.gstNumber}</strong>
-                          </span>
                           <span className="flex items-center gap-1">
                             <Truck className="h-3.5 w-3.5 text-slate-500" />
                             Dispatch: <strong className="text-slate-700">{offer.leadTime} Days</strong>

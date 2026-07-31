@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { normalizeCategory } from '../lib/normalizeCategory';
 
 const prisma = new PrismaClient();
 
@@ -78,7 +79,7 @@ async function importSheetData() {
 
     if (!itemName || basePrice <= 0) continue;
 
-    const category = categoryRaw.trim() || 'Solar Equipment';
+    const category = normalizeCategory(categoryRaw);
     const brand = makeBrand.trim() || 'Standard Solar';
     const fullName = kw ? `${itemName.trim()} (${kw})` : itemName.trim();
     const cleanVendorName = vendorName.trim() || 'Local Solar Vendor';
