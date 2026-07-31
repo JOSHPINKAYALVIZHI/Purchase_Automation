@@ -431,14 +431,14 @@ export function SimpleProductComparer() {
                 return (
                   <div
                     key={offer.id}
-                    className={`rounded-2xl p-5 border transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                    className={`rounded-2xl p-5 border transition flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
                       isCheapest
                         ? 'bg-blue-50/90 border-blue-600 shadow-md'
                         : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
                     }`}
                   >
                     {/* Left Info */}
-                    <div className="flex items-start space-x-3.5">
+                    <div className="flex items-start space-x-3.5 flex-1 min-w-[240px]">
                       <div
                         className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-xs ${
                           isCheapest
@@ -455,7 +455,7 @@ export function SimpleProductComparer() {
                             {offer.supplier.companyName}
                           </h3>
                           {isCheapest && (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-600 text-white uppercase tracking-wider">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-600 text-white uppercase tracking-wider shrink-0">
                               Lowest Price
                             </span>
                           )}
@@ -478,101 +478,104 @@ export function SimpleProductComparer() {
                       </div>
                     </div>
 
-                    {/* Middle: Editable Price & GST Details */}
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 shrink-0 md:w-56">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                          Quote Details (Editable)
-                        </span>
-                        <button
-                          onClick={() => setEditingOfferId(isEditing ? null : offer.id)}
-                          className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                        >
-                          {isEditing ? <Check className="h-3.5 w-3.5" /> : <Edit2 className="h-3 w-3" />}
-                          <span>{isEditing ? 'Done' : 'Edit Rate'}</span>
-                        </button>
+                    {/* Right Side: Quote Details Box & Action Buttons */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+                      {/* Middle: Editable Price & GST Details */}
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 w-full sm:w-56 shrink-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                            Quote Details (Editable)
+                          </span>
+                          <button
+                            onClick={() => setEditingOfferId(isEditing ? null : offer.id)}
+                            className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                          >
+                            {isEditing ? <Check className="h-3.5 w-3.5" /> : <Edit2 className="h-3 w-3" />}
+                            <span>{isEditing ? 'Done' : 'Edit Rate'}</span>
+                          </button>
+                        </div>
+
+                        {isEditing ? (
+                          <div className="space-y-2 text-xs">
+                            <div>
+                              <label className="text-[10px] text-slate-500 font-bold block">Base Rate (₹)</label>
+                              <input
+                                type="number"
+                                value={currentEdit.basePrice}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setEditedPrices((prev) => ({
+                                    ...prev,
+                                    [offer.id]: { ...currentEdit, basePrice: val },
+                                  }));
+                                }}
+                                className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] text-slate-500 font-bold block">GST (%)</label>
+                              <input
+                                type="number"
+                                value={currentEdit.gstPercentage}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setEditedPrices((prev) => ({
+                                    ...prev,
+                                    [offer.id]: { ...currentEdit, gstPercentage: val },
+                                  }));
+                                }}
+                                className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-500">Base Rate:</span>
+                              <strong className="text-slate-800">₹{currentEdit.basePrice.toLocaleString('en-IN')}</strong>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-500">GST ({currentEdit.gstPercentage}%):</span>
+                              <strong className="text-slate-800">
+                                +₹{((currentEdit.basePrice * currentEdit.gstPercentage) / 100).toLocaleString('en-IN')}
+                              </strong>
+                            </div>
+                            <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
+                              <span className="font-bold text-slate-700">With GST:</span>
+                              <strong className="text-blue-600 font-black text-sm">
+                                ₹{calculatedEffective.toLocaleString('en-IN')}
+                              </strong>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {isEditing ? (
-                        <div className="space-y-2 text-xs">
-                          <div>
-                            <label className="text-[10px] text-slate-500 font-bold block">Base Rate (₹)</label>
-                            <input
-                              type="number"
-                              value={currentEdit.basePrice}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0;
-                                setEditedPrices((prev) => ({
-                                  ...prev,
-                                  [offer.id]: { ...currentEdit, basePrice: val },
-                                }));
-                              }}
-                              className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
-                            />
-                          </div>
+                      {/* Right Action Buttons: View Log & ADD TO CART */}
+                      <div className="flex sm:flex-col items-center sm:items-stretch gap-2 w-full sm:w-auto shrink-0">
+                        {/* View Log Button (Static Historical Audit) */}
+                        <button
+                          onClick={() => handleOpenProductLog(offer)}
+                          className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center justify-center space-x-1.5 shrink-0 whitespace-nowrap w-1/2 sm:w-auto"
+                          title="View static historical log for this product"
+                        >
+                          <History className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                          <span>View Log</span>
+                        </button>
 
-                          <div>
-                            <label className="text-[10px] text-slate-500 font-bold block">GST (%)</label>
-                            <input
-                              type="number"
-                              value={currentEdit.gstPercentage}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0;
-                                setEditedPrices((prev) => ({
-                                  ...prev,
-                                  [offer.id]: { ...currentEdit, gstPercentage: val },
-                                }));
-                              }}
-                              className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-0.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">Base Rate:</span>
-                            <strong className="text-slate-800">₹{currentEdit.basePrice.toLocaleString('en-IN')}</strong>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">GST ({currentEdit.gstPercentage}%):</span>
-                            <strong className="text-slate-800">
-                              +₹{((currentEdit.basePrice * currentEdit.gstPercentage) / 100).toLocaleString('en-IN')}
-                            </strong>
-                          </div>
-                          <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
-                            <span className="font-bold text-slate-700">With GST:</span>
-                            <strong className="text-blue-600 font-black text-sm">
-                              ₹{calculatedEffective.toLocaleString('en-IN')}
-                            </strong>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right Action Buttons: View Log & ADD TO CART */}
-                    <div className="flex items-center justify-end gap-2 pt-2 md:pt-0">
-                      {/* View Log Button (Static Historical Audit) */}
-                      <button
-                        onClick={() => handleOpenProductLog(offer)}
-                        className="px-3 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center space-x-1 shrink-0"
-                        title="View static historical log for this product"
-                      >
-                        <History className="h-3.5 w-3.5 text-blue-600" />
-                        <span>View Log</span>
-                      </button>
-
-                      {/* ADD TO CART BUTTON (Replaces Order Now) */}
-                      <button
-                        onClick={() => handleAddToCart(offer)}
-                        className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-1.5 shrink-0 ${
-                          isCheapest
-                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
-                            : 'bg-slate-900 text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        <span>Add to Cart</span>
-                      </button>
+                        {/* ADD TO CART BUTTON */}
+                        <button
+                          onClick={() => handleAddToCart(offer)}
+                          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 shrink-0 whitespace-nowrap w-1/2 sm:w-auto ${
+                            isCheapest
+                              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
+                              : 'bg-slate-900 text-white hover:bg-slate-800'
+                          }`}
+                        >
+                          <ShoppingCart className="h-4 w-4 shrink-0" />
+                          <span>Add to Cart</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
