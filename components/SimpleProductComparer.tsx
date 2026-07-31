@@ -317,15 +317,15 @@ export function SimpleProductComparer() {
           />
         </div>
 
-        {/* Cart Trigger Button */}
+        {/* Compact Cart Trigger Button */}
         <button
           onClick={() => setShowCartDrawer(true)}
-          className="relative px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-md shadow-blue-500/20 w-full sm:w-auto justify-center"
+          className="relative px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm w-full sm:w-auto justify-center"
         >
-          <ShoppingCart className="h-4.5 w-4.5" />
+          <ShoppingCart className="h-3.5 w-3.5" />
           <span>Cart ({cartSummary.totalItemsCount})</span>
           {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-slate-900 text-white font-black text-[10px] flex items-center justify-center border-2 border-white">
+            <span className="absolute -top-1.5 -right-1.5 h-4.5 w-4.5 rounded-full bg-slate-900 text-white font-black text-[9px] flex items-center justify-center border-2 border-white">
               {cart.length}
             </span>
           )}
