@@ -24,8 +24,8 @@ export function OthersView() {
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 mb-2">
-          <Layers className="h-3.5 w-3.5 text-blue-600" />
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-2">
+          <Layers className="h-3.5 w-3.5 text-emerald-600" />
           <span>Google Sheet Additional Tabs & Procurement Terms</span>
         </div>
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Other Supplier Details & Guidelines</h1>
@@ -37,7 +37,7 @@ export function OthersView() {
       {/* Category Breakdowns */}
       <div className="space-y-3">
         <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
+          <FileText className="h-5 w-5 text-emerald-600" />
           <span>Procurement Categories Breakdown</span>
         </h2>
 
@@ -46,7 +46,7 @@ export function OthersView() {
             <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="font-extrabold text-slate-900 text-sm">{cat.name}</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   {cat.count}
                 </span>
               </div>
@@ -59,7 +59,7 @@ export function OthersView() {
       {/* SLA & Terms Grid */}
       <div className="space-y-3 pt-2">
         <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-blue-600" />
+          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
           <span>Vendor Procurement & SLA Policies</span>
         </h2>
 
@@ -68,7 +68,7 @@ export function OthersView() {
             const Icon = pol.icon;
             return (
               <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-start space-x-3.5">
-                <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 shrink-0">
+                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>

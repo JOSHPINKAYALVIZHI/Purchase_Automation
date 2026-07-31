@@ -81,8 +81,8 @@ export function AnalysisView() {
       {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 mb-2">
-            <BarChart3 className="h-3.5 w-3.5 text-blue-600" />
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-2">
+            <BarChart3 className="h-3.5 w-3.5 text-emerald-600" />
             <span>Procurement Spend Analytics & Bar Charts</span>
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Total Spend Analysis</h1>
@@ -91,8 +91,8 @@ export function AnalysisView() {
           </p>
         </div>
 
-        <div className="bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-md shadow-blue-500/20 text-left sm:text-right">
-          <span className="text-[10px] text-blue-100 uppercase font-extrabold tracking-wider block">
+        <div className="bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-md shadow-emerald-500/20 text-left sm:text-right">
+          <span className="text-[10px] text-emerald-100 uppercase font-extrabold tracking-wider block">
             Actual Sheet Total Spend
           </span>
           <span className="text-2xl font-black">
@@ -106,7 +106,7 @@ export function AnalysisView() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
             <span>TOTAL PROCUREMENT ITEMS</span>
-            <PackageCheck className="h-4 w-4 text-blue-600" />
+            <PackageCheck className="h-4 w-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900">{logs.length} Line Items</div>
           <p className="text-[11px] text-emerald-600 font-semibold">Across 14 Material Categories</p>
@@ -115,16 +115,16 @@ export function AnalysisView() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
             <span>REGISTERED VENDORS</span>
-            <Users className="h-4 w-4 text-blue-600" />
+            <Users className="h-4 w-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900">15 Vendors</div>
-          <p className="text-[11px] text-blue-600 font-semibold">100% Active & GST Verified</p>
+          <p className="text-[11px] text-emerald-600 font-semibold">100% Active & GST Verified</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
             <span>AVG GST RATE</span>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900">14.2% GST</div>
           <p className="text-[11px] text-slate-500">Calculated across 5%, 12%, 18% tiers</p>
@@ -141,7 +141,7 @@ export function AnalysisView() {
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
+                <BarChart3 className="h-5 w-5 text-emerald-600" />
                 <span>Spend Distribution by Category</span>
               </h3>
               <span className="text-[11px] text-slate-400 font-bold uppercase">Bar Graph</span>
@@ -152,12 +152,12 @@ export function AnalysisView() {
                 <div key={idx} className="space-y-1">
                   <div className="flex items-center justify-between text-xs font-bold">
                     <span className="text-slate-800">{cat.category}</span>
-                    <span className="text-blue-600">₹{cat.amount.toLocaleString('en-IN')}</span>
+                    <span className="text-emerald-700">₹{cat.amount.toLocaleString('en-IN')}</span>
                   </div>
                   {/* Visual Progress Bar */}
                   <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                      className="h-full bg-emerald-600 rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(10, cat.percentage)}%` }}
                     />
                   </div>
@@ -170,7 +170,7 @@ export function AnalysisView() {
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
                 <span>Top Vendors by Procurement Spend</span>
               </h3>
               <span className="text-[11px] text-slate-400 font-bold uppercase">Vendor Share</span>
@@ -186,7 +186,7 @@ export function AnalysisView() {
                   {/* Visual Progress Bar */}
                   <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-slate-900 rounded-full transition-all duration-500"
+                      className="h-full bg-emerald-700 rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(12, ven.percentage)}%` }}
                     />
                   </div>

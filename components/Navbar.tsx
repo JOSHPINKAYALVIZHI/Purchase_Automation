@@ -30,12 +30,12 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <div className="flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 font-black">
+            <div className="h-9 w-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 font-black">
               <Zap className="h-5 w-5 fill-white" />
             </div>
             <div>
               <span className="font-extrabold text-slate-900 text-lg tracking-tight block">
-                Procure<span className="text-blue-600">AI</span>
+                Procure<span className="text-emerald-600">AI</span>
               </span>
               <span className="text-[10px] text-slate-400 font-semibold block uppercase tracking-wider -mt-1">
                 Solar Procurement Platform
@@ -54,7 +54,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                   onClick={() => setActiveTab(item.id)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                   }`}
                 >
@@ -77,7 +77,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 onClick={() => setActiveTab(item.id)}
                 className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center space-x-1.5 shrink-0 ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >

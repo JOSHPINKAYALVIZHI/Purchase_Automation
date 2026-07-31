@@ -408,13 +408,13 @@ export function SimpleProductComparer() {
       <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         {/* Category Dropdown Select */}
         <div className="relative w-full sm:w-64 shrink-0">
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none">
             <Filter className="h-4 w-4" />
           </div>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold text-xs sm:text-sm rounded-xl pl-10 pr-8 py-2.5 appearance-none focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 cursor-pointer"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold text-xs sm:text-sm rounded-xl pl-10 pr-8 py-2.5 appearance-none focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 cursor-pointer"
           >
             <option value="ALL">All Categories ({uniqueCategories.length})</option>
             {uniqueCategories.map((cat) => (
@@ -436,14 +436,14 @@ export function SimpleProductComparer() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search items within selected category..."
-            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
           />
         </div>
 
         {/* Balanced Cart Trigger Button */}
         <button
           onClick={() => setShowCartDrawer(true)}
-          className="relative px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-sm shadow-blue-500/20 w-full sm:w-auto justify-center"
+          className="relative px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition flex items-center space-x-2 shrink-0 shadow-sm shadow-emerald-500/20 w-full sm:w-auto justify-center"
         >
           <ShoppingCart className="h-4 w-4" />
           <span>Cart ({cartSummary.totalItemsCount})</span>
@@ -473,13 +473,13 @@ export function SimpleProductComparer() {
               Available Products ({filteredProducts.length})
             </span>
             {selectedCategory !== 'ALL' && (
-              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
                 Category: {selectedCategory}
               </span>
             )}
           </div>
 
-          {/* Add Product Button Moved Down */}
+          {/* Add Product Button */}
           <button
             onClick={handleOpenAddProductModal}
             className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center space-x-1.5 shadow-sm shadow-emerald-500/20"
@@ -499,11 +499,11 @@ export function SimpleProductComparer() {
                   onClick={() => setSelectedProduct(p)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 border ${
                     isSelected
-                      ? 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-500/20 scale-105'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'
+                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-md shadow-emerald-500/20 scale-105'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50'
                   }`}
                 >
-                  <Zap className={`h-3.5 w-3.5 ${isSelected ? 'text-white' : 'text-blue-600'}`} />
+                  <Zap className={`h-3.5 w-3.5 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
                   <span>{p.name}</span>
                 </button>
               );
@@ -545,7 +545,7 @@ export function SimpleProductComparer() {
                     key={offer.id}
                     className={`rounded-2xl p-5 border transition flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
                       isCheapest
-                        ? 'bg-blue-50/90 border-blue-600 shadow-md'
+                        ? 'bg-emerald-50/90 border-emerald-600 shadow-md'
                         : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
                     }`}
                   >
@@ -554,7 +554,7 @@ export function SimpleProductComparer() {
                       <div
                         className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-xs ${
                           isCheapest
-                            ? 'bg-blue-600 text-white shadow-sm'
+                            ? 'bg-emerald-600 text-white shadow-sm'
                             : 'bg-slate-100 text-slate-600 border border-slate-200'
                         }`}
                       >
@@ -567,7 +567,7 @@ export function SimpleProductComparer() {
                             {offer.supplier.companyName}
                           </h3>
                           {isCheapest && (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-600 text-white uppercase tracking-wider shrink-0">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-600 text-white uppercase tracking-wider shrink-0">
                               Lowest Price
                             </span>
                           )}
@@ -596,7 +596,7 @@ export function SimpleProductComparer() {
                           </span>
                           <button
                             onClick={() => setEditingOfferId(isEditing ? null : offer.id)}
-                            className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                            className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center space-x-1"
                           >
                             {isEditing ? <Check className="h-3.5 w-3.5" /> : <Edit2 className="h-3 w-3" />}
                             <span>{isEditing ? 'Done' : 'Edit Rate'}</span>
@@ -617,7 +617,7 @@ export function SimpleProductComparer() {
                                     [offer.id]: { ...currentEdit, basePrice: val },
                                   }));
                                 }}
-                                className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
+                                className="w-full bg-white border border-emerald-500 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
                               />
                             </div>
 
@@ -633,7 +633,7 @@ export function SimpleProductComparer() {
                                     [offer.id]: { ...currentEdit, gstPercentage: val },
                                   }));
                                 }}
-                                className="w-full bg-white border border-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
+                                className="w-full bg-white border border-emerald-500 rounded-lg px-2 py-1 text-xs font-bold text-slate-900"
                               />
                             </div>
                           </div>
@@ -651,7 +651,7 @@ export function SimpleProductComparer() {
                             </div>
                             <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
                               <span className="font-bold text-slate-700">With GST:</span>
-                              <strong className="text-blue-600 font-black text-sm">
+                              <strong className="text-emerald-700 font-black text-sm">
                                 ₹{calculatedEffective.toLocaleString('en-IN')}
                               </strong>
                             </div>
@@ -667,7 +667,7 @@ export function SimpleProductComparer() {
                           className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition flex items-center justify-center space-x-1.5 shrink-0 whitespace-nowrap w-1/2 sm:w-auto"
                           title="View static historical log for this product"
                         >
-                          <History className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                          <History className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
                           <span>View Log</span>
                         </button>
 
@@ -676,7 +676,7 @@ export function SimpleProductComparer() {
                           onClick={() => handleAddToCart(offer)}
                           className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 shrink-0 whitespace-nowrap w-1/2 sm:w-auto ${
                             isCheapest
-                              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
+                              ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20'
                               : 'bg-slate-900 text-white hover:bg-slate-800'
                           }`}
                         >
@@ -711,7 +711,7 @@ export function SimpleProductComparer() {
             {/* Cart Header */}
             <div className="space-y-4">
               <div className="flex items-center space-x-3 border-b border-slate-200 pb-4">
-                <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
                   <ShoppingCart className="h-6 w-6" />
                 </div>
                 <div>
@@ -721,8 +721,8 @@ export function SimpleProductComparer() {
               </div>
 
               {orderSuccessMsg ? (
-                <div className="p-6 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold text-center flex flex-col items-center justify-center gap-3 py-12">
-                  <CheckCircle2 className="h-10 w-10 text-blue-600 animate-bounce" />
+                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center flex flex-col items-center justify-center gap-3 py-12">
+                  <CheckCircle2 className="h-10 w-10 text-emerald-600 animate-bounce" />
                   <span className="text-sm font-extrabold">{orderSuccessMsg}</span>
                 </div>
               ) : cart.length > 0 ? (
@@ -733,7 +733,7 @@ export function SimpleProductComparer() {
                       <div className="flex items-start justify-between">
                         <div>
                           <h4 className="font-extrabold text-slate-900">{item.productName}</h4>
-                          <span className="text-[11px] text-blue-600 font-bold block">{item.supplierName}</span>
+                          <span className="text-[11px] text-emerald-700 font-bold block">{item.supplierName}</span>
                         </div>
                         <button
                           onClick={() => handleRemoveFromCart(item.id)}
@@ -783,7 +783,7 @@ export function SimpleProductComparer() {
               <div className="space-y-4 pt-4 border-t border-slate-200">
                 {/* Overall Estimated Amount Card */}
                 <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 shadow-lg">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-400 block">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 block">
                     Overall Estimated Amount Summary
                   </span>
 
@@ -794,11 +794,11 @@ export function SimpleProductComparer() {
                     </div>
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Total Estimated GST:</span>
-                      <strong className="text-blue-300">+₹{cartSummary.gstTotal.toLocaleString('en-IN')}</strong>
+                      <strong className="text-emerald-300">+₹{cartSummary.gstTotal.toLocaleString('en-IN')}</strong>
                     </div>
                     <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-800">
                       <span className="font-black text-white">Grand Total Amount:</span>
-                      <span className="font-black text-blue-400 text-lg">
+                      <span className="font-black text-emerald-400 text-lg">
                         ₹{cartSummary.grandTotal.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -808,7 +808,7 @@ export function SimpleProductComparer() {
                 {/* Final Order Now Button */}
                 <button
                   onClick={handleCheckout}
-                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2"
+                  className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/25 transition flex items-center justify-center space-x-2"
                 >
                   <CheckCircle2 className="h-5 w-5" />
                   <span>Order Now (Generate Purchase Order)</span>
@@ -831,14 +831,14 @@ export function SimpleProductComparer() {
             </button>
 
             <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
-              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+              <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
                 <History className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
                   {logCompanyOffer.supplier.companyName}
                 </h3>
-                <p className="text-xs text-blue-600 font-bold">
+                <p className="text-xs text-emerald-700 font-bold">
                   Static Audit Log: <strong className="text-slate-900">{selectedProduct.name}</strong>
                 </p>
               </div>
@@ -858,7 +858,7 @@ export function SimpleProductComparer() {
                       <th className="py-2.5 px-3">HSN Code</th>
                       <th className="py-2.5 px-3">Make</th>
                       <th className="py-2.5 px-3">Unit Rate</th>
-                      <th className="py-2.5 px-3 text-blue-600">With GST</th>
+                      <th className="py-2.5 px-3 text-emerald-700">With GST</th>
                       <th className="py-2.5 px-3 text-emerald-700">Discount</th>
                     </tr>
                   </thead>
@@ -876,7 +876,7 @@ export function SimpleProductComparer() {
                       <td className="py-3 px-3 font-semibold text-slate-800">
                         ₹{logCompanyOffer.basePrice.toLocaleString('en-IN')}
                       </td>
-                      <td className="py-3 px-3 font-black text-blue-600">
+                      <td className="py-3 px-3 font-black text-emerald-700">
                         ₹{logCompanyOffer.effectivePrice.toLocaleString('en-IN')}
                       </td>
                       <td className="py-3 px-3 font-bold text-emerald-600">

@@ -77,8 +77,8 @@ export function PurchaseLogsView() {
       {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 mb-2">
-            <FileSpreadsheet className="h-3.5 w-3.5 text-blue-600" />
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-2">
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
             <span>Google Sheet Vendor List Table Log</span>
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Purchase Logs</h1>
@@ -90,7 +90,7 @@ export function PurchaseLogsView() {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => alert('Exporting purchase log CSV...')}
-            className="px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs border border-blue-200 transition flex items-center space-x-1.5"
+            className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs border border-emerald-200 transition flex items-center space-x-1.5"
           >
             <Download className="h-4 w-4" />
             <span>Export CSV</span>
@@ -102,11 +102,11 @@ export function PurchaseLogsView() {
       <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         {/* Category Dropdown */}
         <div className="relative w-full sm:w-64 shrink-0">
-          <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600 pointer-events-none" />
+          <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600 pointer-events-none" />
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold text-xs sm:text-sm rounded-xl pl-10 pr-8 py-2.5 appearance-none focus:outline-none focus:border-blue-600"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold text-xs sm:text-sm rounded-xl pl-10 pr-8 py-2.5 appearance-none focus:outline-none focus:border-emerald-600"
           >
             <option value="ALL">All Categories ({categories.length})</option>
             {categories.map((cat) => (
@@ -126,7 +126,7 @@ export function PurchaseLogsView() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search invoice no, vendor name, item, HSN code, make..."
-            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600"
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600"
           />
         </div>
       </div>
@@ -152,14 +152,14 @@ export function PurchaseLogsView() {
                   <th className="py-3.5 px-3">Make</th>
                   <th className="py-3.5 px-3">Unit Rate</th>
                   <th className="py-3.5 px-3">GST %</th>
-                  <th className="py-3.5 px-3 text-blue-600">With GST Rate</th>
+                  <th className="py-3.5 px-3 text-emerald-700">With GST Rate</th>
                   <th className="py-3.5 px-3 text-emerald-700">Discount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-[11px]">
                 {filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 px-4 font-mono font-bold text-blue-600">{log.invoiceNo}</td>
+                    <td className="py-3 px-4 font-mono font-bold text-emerald-700">{log.invoiceNo}</td>
                     <td className="py-3 px-3 text-slate-500">{log.date}</td>
                     <td className="py-3 px-3 font-extrabold text-slate-900">{log.supplierName}</td>
                     <td className="py-3 px-3 text-slate-600 font-semibold">{log.category}</td>
@@ -169,7 +169,7 @@ export function PurchaseLogsView() {
                     <td className="py-3 px-3 font-semibold text-slate-800">{log.brand}</td>
                     <td className="py-3 px-3 font-semibold text-slate-900">₹{log.basePrice.toLocaleString('en-IN')}</td>
                     <td className="py-3 px-3 text-slate-600">{log.gstPercentage}%</td>
-                    <td className="py-3 px-3 font-black text-blue-600">₹{log.effectivePrice.toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-3 font-black text-emerald-700">₹{log.effectivePrice.toLocaleString('en-IN')}</td>
                     <td className="py-3 px-3 font-bold text-emerald-600">{log.discount}</td>
                   </tr>
                 ))}
