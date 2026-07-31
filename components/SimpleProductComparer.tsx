@@ -1254,12 +1254,12 @@ export function SimpleProductComparer() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">GSTIN Number (Optional)</label>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Invoice Number (Optional)</label>
                         <input
                           type="text"
-                          value={newGstNumber}
-                          onChange={(e) => setNewGstNumber(e.target.value)}
-                          placeholder="e.g. 33AAACG123456789 (Auto if empty)"
+                          value={formInvoiceNo}
+                          onChange={(e) => setFormInvoiceNo(e.target.value)}
+                          placeholder="e.g. FSCH/00139/25-26"
                           className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-600"
                         />
                       </div>
