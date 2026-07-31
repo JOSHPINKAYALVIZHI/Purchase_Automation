@@ -58,21 +58,12 @@ export function SuppliersView() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-2">
-            <Users className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Google Sheet Suppliers Contacts Directory</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Suppliers Directory</h1>
-          <p className="text-slate-600 text-xs sm:text-sm">
-            Click on any company card to view all products supplied and their detailed pricing ({filteredSuppliers.length} Vendors)
-          </p>
-        </div>
+      {/* Header Controls */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Suppliers Directory</h1>
 
         {/* Search Input */}
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full sm:w-80">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
