@@ -375,26 +375,8 @@ export function SimpleProductComparer() {
       {/* 3. Company Price List (Low to High with Editable Prices & Add to Cart) */}
       {selectedProduct && (
         <div className="space-y-4 pt-2">
-          <div className="flex items-center justify-between px-1 border-b border-slate-200 pb-3">
-            <div>
-              <h2 className="text-xl font-extrabold text-slate-900">{selectedProduct.name}</h2>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              {/* Delivery & Rating Info Help Button */}
-              <button
-                onClick={() => setShowMetricsHelp(true)}
-                className="text-xs font-bold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2.5 py-1 rounded-xl border border-slate-300 transition flex items-center space-x-1"
-                title="How delivery days and vendor ratings are calculated"
-              >
-                <HelpCircle className="h-3.5 w-3.5 text-blue-600" />
-                <span>How Ratings & Delivery work?</span>
-              </button>
-
-              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 hidden sm:inline-block">
-                Ranked: Lowest ➔ Highest
-              </span>
-            </div>
+          <div className="border-b border-slate-200 pb-3">
+            <h2 className="text-xl font-extrabold text-slate-900">{selectedProduct.name}</h2>
           </div>
 
           {loading ? (
