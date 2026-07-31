@@ -21,6 +21,7 @@ import {
   Check,
   Building2,
   User,
+  Phone,
 } from 'lucide-react';
 import { normalizeCategory } from '@/lib/normalizeCategory';
 
@@ -31,6 +32,8 @@ interface CartItem {
   unit: string;
   supplierId: string;
   supplierName: string;
+  supplierPhone?: string | null;
+  contactPerson?: string | null;
   basePrice: number;
   gstPercentage: number;
   effectivePrice: number;
@@ -320,6 +323,8 @@ export function SimpleProductComparer() {
             unit: selectedProduct.unit || 'Pcs',
             supplierId: offer.supplier.id,
             supplierName: offer.supplier.companyName,
+            supplierPhone: offer.supplier.phone,
+            contactPerson: offer.supplier.contactPerson,
             basePrice: edit.basePrice,
             gstPercentage: edit.gstPercentage,
             effectivePrice,
@@ -734,6 +739,13 @@ export function SimpleProductComparer() {
                         <div>
                           <h4 className="font-extrabold text-slate-900">{item.productName}</h4>
                           <span className="text-[11px] text-emerald-700 font-bold block">{item.supplierName}</span>
+                          {item.supplierPhone && (
+                            <span className="text-[10px] text-slate-600 font-semibold flex items-center gap-1 mt-0.5">
+                              <Phone className="h-3 w-3 text-emerald-600 shrink-0" />
+                              <span>{item.supplierPhone}</span>
+                              {item.contactPerson ? <span className="text-slate-400 font-medium">({item.contactPerson})</span> : null}
+                            </span>
+                          )}
                         </div>
                         <button
                           onClick={() => handleRemoveFromCart(item.id)}
