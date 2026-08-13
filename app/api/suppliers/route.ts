@@ -27,11 +27,11 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, contactPerson, phone, email } = body;
+    const { id, companyName, contactPerson, phone, email } = body;
     if (!id) {
       return NextResponse.json({ success: false, error: 'Supplier ID is required' }, { status: 400 });
     }
-    const updated = await updateSupplierContact(id, { contactPerson, phone, email });
+    const updated = await updateSupplierContact(id, { companyName, contactPerson, phone, email });
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

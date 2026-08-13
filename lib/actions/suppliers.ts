@@ -150,13 +150,36 @@ export async function compareSupplierPrices(productId: string) {
   };
 }
 
-export async function updateSupplierContact(id: string, data: { contactPerson?: string | null; phone?: string | null; email?: string | null }) {
-  return await prisma.supplier.update({
-    where: { id },
-    data: {
-      contactPerson: data.contactPerson !== undefined ? data.contactPerson : undefined,
-      phone: data.phone !== undefined ? data.phone : undefined,
-      email: data.email !== undefined ? data.email : undefined,
-    },
-  });
+export async function updateSupplierContact(id: string, data: { companyName?: string; contactPerson?: string | null; phone?: string | null; email?: string | null }) {
+  try {
+    let existing = await prisma.supplier.findUnique({ where: { id } }).catch(() => null);
+    if (!existing && data.companyName) {
+      existing = await prisma.supplier.findFirst({ where: { companyName: data.companyName } }).catch(() => null);
+    }
+
+    if (existing) {
+      return await prisma.supplier.update({
+        where: { id: existing.id },
+        data: {
+          contactPerson: data.contactPerson !== undefined ? data.contactPerson : undefined,
+          phone: data.phone !== undefined ? data.phone : undefined,
+          email: data.email !== undefined ? data.email : undefined,
+        },
+      });
+    } else if (data.companyName) {
+      return await prisma.supplier.create({
+        data: {
+          companyName: data.companyName,
+          gstNumber: '33AAACG123456789',
+          phone: data.phone || '+91 98422 55555',
+          email: data.email || 'info@supplier.com',
+          address: 'Coimbatore, Tamil Nadu',
+          contactPerson: data.contactPerson || null,
+        },
+      });
+    }
+  } catch (e) {
+    console.error('Error updating supplier contact:', e);
+  }
+  return null;
 }

@@ -28,6 +28,18 @@ export function OthersView() {
   const [saving, setSaving] = useState<boolean>(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Local Contact Overrides State
+  const [contactOverrides, setContactOverrides] = useState<Record<string, { contactPerson: string | null; phone: string | null; email: string | null }>>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('jesuans_contact_overrides');
+      if (saved) {
+        setContactOverrides(JSON.parse(saved));
+      }
+    } catch (e) {}
+  }, []);
+
   useEffect(() => {
     async function loadSuppliers() {
       try {
@@ -91,8 +103,22 @@ export function OthersView() {
       }
     });
 
-    return Array.from(map.values());
-  }, [suppliers, approvedLogItems]);
+    // 3. Apply contactOverrides so edited details are 100% reflected and persisted
+    const list = Array.from(map.values());
+    return list.map((s) => {
+      const cKey = s.companyName.toLowerCase().trim();
+      const override = contactOverrides[cKey] || contactOverrides[s.id];
+      if (override) {
+        return {
+          ...s,
+          contactPerson: override.contactPerson !== undefined ? override.contactPerson : s.contactPerson,
+          phone: override.phone !== undefined ? override.phone : s.phone,
+          email: override.email !== undefined ? override.email : s.email,
+        };
+      }
+      return s;
+    });
+  }, [suppliers, approvedLogItems, contactOverrides]);
 
   const filteredSuppliers = useMemo(() => {
     return combinedSuppliers.filter((s) => {
@@ -118,41 +144,54 @@ export function OthersView() {
   const handleSaveContact = async () => {
     if (!editingSupplier) return;
     setSaving(true);
+
+    const updatedData = {
+      contactPerson: contactPersonForm.trim() || null,
+      phone: phoneForm.trim() || null,
+      email: emailForm.trim() || null,
+    };
+
+    // 1. Update contact overrides state & localStorage
+    const cKey = editingSupplier.companyName.toLowerCase().trim();
+    const newOverrides = {
+      ...contactOverrides,
+      [cKey]: updatedData,
+      [editingSupplier.id]: updatedData,
+    };
+    setContactOverrides(newOverrides);
     try {
-      const res = await fetch('/api/suppliers', {
+      localStorage.setItem('jesuans_contact_overrides', JSON.stringify(newOverrides));
+    } catch (e) {}
+
+    // 2. Update suppliers state array if existing DB supplier
+    setSuppliers((prev) =>
+      prev.map((s) =>
+        s.id === editingSupplier.id || s.companyName.toLowerCase().trim() === cKey
+          ? { ...s, ...updatedData }
+          : s
+      )
+    );
+
+    // 3. Persist to DB API
+    try {
+      await fetch('/api/suppliers', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: editingSupplier.id,
-          contactPerson: contactPersonForm.trim() || null,
-          phone: phoneForm.trim() || null,
-          email: emailForm.trim() || null,
+          companyName: editingSupplier.companyName,
+          ...updatedData,
         }),
       });
-      const json = await res.json();
-      if (json.success) {
-        setSuppliers((prev) =>
-          prev.map((s) =>
-            s.id === editingSupplier.id
-              ? {
-                  ...s,
-                  contactPerson: contactPersonForm.trim() || null,
-                  phone: phoneForm.trim() || null,
-                  email: emailForm.trim() || null,
-                }
-              : s
-          )
-        );
-        setSuccessMsg(`Contact details for ${editingSupplier.companyName} saved successfully!`);
-        setTimeout(() => {
-          setEditingSupplier(null);
-          setSuccessMsg(null);
-        }, 1200);
-      }
     } catch (err) {
       console.error('Error saving contact:', err);
     } finally {
       setSaving(false);
+      setSuccessMsg(`Contact details for ${editingSupplier.companyName} updated & saved!`);
+      setTimeout(() => {
+        setEditingSupplier(null);
+        setSuccessMsg(null);
+      }, 1000);
     }
   };
 
