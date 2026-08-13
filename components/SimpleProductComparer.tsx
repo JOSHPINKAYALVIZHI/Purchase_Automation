@@ -47,7 +47,7 @@ interface CartItem {
 }
 
 export function SimpleProductComparer() {
-  const { user, sendRequestToAdmin, approvedLogItems } = useAuth();
+  const { user, sendRequestToAdmin, approvedLogItems, addDirectLogItem } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
   const [products, setProducts] = useState<any[]>([]);
