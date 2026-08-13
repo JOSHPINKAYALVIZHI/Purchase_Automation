@@ -22,6 +22,7 @@ import {
   Building2,
   User,
   Phone,
+  MapPin,
 } from 'lucide-react';
 import { normalizeCategory } from '@/lib/normalizeCategory';
 import { useAuth } from '@/lib/AuthContext';
@@ -686,6 +687,25 @@ export function SimpleProductComparer() {
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-600 text-white uppercase tracking-wider shrink-0">
                               Lowest Price
                             </span>
+                          )}
+                        </div>
+
+                        {/* Company Contact Details & Location Address */}
+                        <div className="space-y-0.5 text-xs text-slate-600">
+                          {offer.supplier.phone && (
+                            <div className="flex items-center space-x-1.5">
+                              <Phone className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                              <span className="font-bold text-slate-800">
+                                {offer.supplier.contactPerson ? `${offer.supplier.contactPerson} • ` : ''}
+                                {offer.supplier.phone}
+                              </span>
+                            </div>
+                          )}
+                          {offer.supplier.address && (
+                            <div className="flex items-center space-x-1.5">
+                              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <span className="text-slate-600">{offer.supplier.address}</span>
+                            </div>
                           )}
                         </div>
                       </div>
