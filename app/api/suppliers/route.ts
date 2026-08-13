@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || undefined;
 
     const suppliers = await getSuppliers({ search, status });
-    return NextResponse.json({ success: true, count: (suppliers || []).length, data: suppliers || [] });
+    return NextResponse.json({ success: true, count: (suppliers || []).length, data: suppliers || [] }, { status: 200 });
   } catch (error: any) {
     console.error('❌ GET /api/suppliers Error:', error);
-    return NextResponse.json({ success: true, count: 0, data: [] });
+    return NextResponse.json({ success: true, count: 0, data: [] }, { status: 200 });
   }
 }
 
@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const supplier = await createSupplier(body);
-    return NextResponse.json({ success: true, data: supplier }, { status: 201 });
+    return NextResponse.json({ success: true, data: supplier }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 200 });
   }
 }
 
@@ -30,11 +30,11 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { id, companyName, contactPerson, phone, email } = body;
     if (!id) {
-      return NextResponse.json({ success: false, error: 'Supplier ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Supplier ID is required' }, { status: 200 });
     }
     const updated = await updateSupplierContact(id, { companyName, contactPerson, phone, email });
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({ success: true, data: updated }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 200 });
   }
 }
