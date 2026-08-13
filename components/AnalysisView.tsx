@@ -304,17 +304,26 @@ export function AnalysisView() {
     return combined.filter((l) => !deletedLogIds.includes(l.id));
   }, [logs, formattedApprovedItems, deletedLogIds]);
 
-  // Dynamically generate available years from dataset + selectedYear
+  // Dynamically generate available years from dataset + range (2016 to 2036+)
   const availableYears = useMemo(() => {
-    const yearsSet = new Set<string>(['2024', '2025', '2026', '2027', '2028', '2029', '2030']);
+    const yearsSet = new Set<string>();
+    const currentYr = new Date().getFullYear();
+
+    // Dynamically generate 10 years past to 10 years future
+    for (let y = currentYr - 10; y <= currentYr + 10; y++) {
+      yearsSet.add(String(y));
+    }
+
     validCombinedLogs.forEach((l) => {
       if (l.monthStr && l.monthStr.length >= 4) {
         yearsSet.add(l.monthStr.substring(0, 4));
       }
     });
     yearsSet.add(selectedYear);
+    yearsSet.add(String(currentMonthDate.getFullYear()));
+
     return Array.from(yearsSet).sort((a, b) => Number(a) - Number(b));
-  }, [validCombinedLogs, selectedYear]);
+  }, [validCombinedLogs, selectedYear, currentMonthDate]);
 
   // Filter logs if a specific date or month is selected (strictly excluding deleted log items)
   const activeLogs = useMemo(() => {
@@ -743,7 +752,7 @@ export function AnalysisView() {
                 onChange={(e) => handleYearSelectChange(Number(e.target.value))}
                 className="bg-transparent font-extrabold text-slate-900 text-xs px-1 py-0.5 focus:outline-none cursor-pointer border-l border-slate-300 pl-1"
               >
-                {['2024', '2025', '2026', '2027', '2028', '2029', '2030'].map((yr) => (
+                {availableYears.map((yr) => (
                   <option key={yr} value={yr}>
                     {yr}
                   </option>
