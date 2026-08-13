@@ -86,6 +86,7 @@ export function SimpleProductComparer() {
   const [cartSpecification, setCartSpecification] = useState<string>('');
 
   // Add Product Form State
+  const [selectedExistingProductId, setSelectedExistingProductId] = useState<string>('NEW');
   const [formProductName, setFormProductName] = useState<string>('');
   const [formCategory, setFormCategory] = useState<string>('Solar Equipment');
   const [formCustomCategory, setFormCustomCategory] = useState<string>('');
@@ -182,6 +183,19 @@ export function SimpleProductComparer() {
 
   const handleOpenAddProductModal = () => {
     fetchSuppliersForModal();
+    if (combinedProducts.length > 0) {
+      const firstP = combinedProducts[0];
+      setSelectedExistingProductId(firstP.id);
+      setFormProductName(firstP.name);
+      if (firstP.category) setFormCategory(firstP.category);
+      if (firstP.brand) setFormBrand(firstP.brand);
+      if (firstP.specification) setFormSpec(firstP.specification);
+      if (firstP.hsn) setFormHsn(firstP.hsn);
+      if (firstP.unit) setFormUnit(firstP.unit);
+    } else {
+      setSelectedExistingProductId('NEW');
+      setFormProductName('');
+    }
     setShowAddProductModal(true);
   };
 
@@ -1074,12 +1088,44 @@ export function SimpleProductComparer() {
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Product Name <span className="text-red-500">*</span>
                     </label>
+                    <select
+                      value={selectedExistingProductId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedExistingProductId(val);
+                        if (val !== 'NEW') {
+                          const found = combinedProducts.find((p) => p.id === val || p.name === val);
+                          if (found) {
+                            setFormProductName(found.name);
+                            if (found.category) setFormCategory(found.category);
+                            if (found.brand) setFormBrand(found.brand);
+                            if (found.specification) setFormSpec(found.specification);
+                            if (found.hsn) setFormHsn(found.hsn);
+                            if (found.unit) setFormUnit(found.unit);
+                          }
+                        } else {
+                          setFormProductName('');
+                        }
+                      }}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600 mb-1.5 cursor-pointer"
+                    >
+                      {combinedProducts.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.category})
+                        </option>
+                      ))}
+                      <option value="NEW">➕ + Add New Product Name...</option>
+                    </select>
+
                     <input
                       type="text"
                       required
                       value={formProductName}
-                      onChange={(e) => setFormProductName(e.target.value)}
-                      placeholder="e.g. 100KW Solar Inverter"
+                      onChange={(e) => {
+                        setFormProductName(e.target.value);
+                        setSelectedExistingProductId('NEW');
+                      }}
+                      placeholder="Or enter new product name..."
                       className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
                     />
                   </div>
