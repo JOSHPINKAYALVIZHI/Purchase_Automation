@@ -219,28 +219,15 @@ export function SupplierComparisonView({ setActiveTab }: SupplierComparisonViewP
               </div>
             )}
 
-            {comparisonData.highlights.fastestDelivery && (
-              <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center space-x-3">
-                <div className="p-2.5 rounded-lg bg-cyan-500/20 text-cyan-400">
-                  <Truck className="h-5 w-5" />
+            {comparisonData.highlights.lowestPrice && (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center space-x-3">
+                <div className="p-2.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                  <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-[11px] text-cyan-300 font-bold uppercase tracking-wider">Fastest Delivery</p>
-                  <p className="text-sm font-extrabold text-white">{comparisonData.highlights.fastestDelivery.supplier.companyName}</p>
-                  <p className="text-xs text-cyan-400 font-bold">{comparisonData.highlights.fastestDelivery.leadTime} Days Dispatch</p>
-                </div>
-              </div>
-            )}
-
-            {comparisonData.highlights.highestRated && (
-              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center space-x-3">
-                <div className="p-2.5 rounded-lg bg-purple-500/20 text-purple-400">
-                  <Star className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-purple-300 font-bold uppercase tracking-wider">Highest Rated</p>
-                  <p className="text-sm font-extrabold text-white">{comparisonData.highlights.highestRated.supplier.companyName}</p>
-                  <p className="text-xs text-purple-400 font-bold">⭐ {comparisonData.highlights.highestRated.supplier.rating} / 5.0</p>
+                  <p className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider">Best Price Offer</p>
+                  <p className="text-sm font-extrabold text-white">{comparisonData.highlights.lowestPrice.supplier.companyName}</p>
+                  <p className="text-xs text-emerald-400 font-bold">₹{comparisonData.highlights.lowestPrice.effectivePrice} (incl. GST)</p>
                 </div>
               </div>
             )}
@@ -255,9 +242,7 @@ export function SupplierComparisonView({ setActiveTab }: SupplierComparisonViewP
                   <th className="py-3.5 px-3 font-semibold">Base Price</th>
                   <th className="py-3.5 px-3 font-semibold">GST %</th>
                   <th className="py-3.5 px-3 font-semibold text-emerald-400">Effective Price</th>
-                  <th className="py-3.5 px-3 font-semibold">Lead Time</th>
                   <th className="py-3.5 px-3 font-semibold">MOQ</th>
-                  <th className="py-3.5 px-3 font-semibold">Vendor Rating</th>
                   <th className="py-3.5 px-3 font-semibold">Badges</th>
                   <th className="py-3.5 px-4 font-semibold text-right">Action</th>
                 </tr>
@@ -281,9 +266,7 @@ export function SupplierComparisonView({ setActiveTab }: SupplierComparisonViewP
                       <td className="py-4 px-3 font-extrabold text-emerald-400 text-sm">
                         ₹{q.effectivePrice.toLocaleString('en-IN')}
                       </td>
-                      <td className="py-4 px-3 text-slate-200 font-semibold">{q.leadTime} Days</td>
                       <td className="py-4 px-3 text-slate-400">{q.minimumOrderQuantity} {selectedProduct.unit}</td>
-                      <td className="py-4 px-3 font-bold text-purple-300">⭐ {q.supplier.rating}</td>
                       <td className="py-4 px-3">
                         <div className="flex flex-wrap gap-1">
                           {isLowest && (
