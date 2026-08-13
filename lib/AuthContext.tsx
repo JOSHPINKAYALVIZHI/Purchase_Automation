@@ -40,6 +40,7 @@ interface AuthContextType {
   purchaseLogStatuses: Record<string, 'SENT' | 'RECEIVED'>;
   toggleLogStatus: (logId: string) => void;
   addDirectLogItem: (item: any) => void;
+  clearAllAppData: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -278,6 +279,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('jesuans_log_statuses', JSON.stringify(updatedStatuses));
   };
 
+  const clearAllAppData = async () => {
+    try {
+      localStorage.removeItem('jesuans_approved_log_items');
+      localStorage.removeItem('jesuans_deleted_log_ids');
+      localStorage.removeItem('jesuans_log_statuses');
+      localStorage.removeItem('jesuans_contact_overrides');
+      localStorage.removeItem('jesuans_custom_products');
+      localStorage.removeItem('jesuans_cart');
+      localStorage.removeItem('jesuans_pending_requests');
+
+      setApprovedLogItems([]);
+      setPendingRequests([]);
+      setPurchaseLogStatuses({});
+
+      await fetch('/api/admin/clear-data', { method: 'POST' });
+    } catch (e) {
+      console.error('Error clearing data:', e);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -294,6 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         purchaseLogStatuses,
         toggleLogStatus,
         addDirectLogItem,
+        clearAllAppData,
       }}
     >
       {children}
