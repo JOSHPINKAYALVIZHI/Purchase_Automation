@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/AuthContext';
 export function SuppliersView() {
   const { approvedLogItems } = useAuth();
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
 
@@ -29,13 +30,21 @@ export function SuppliersView() {
   const [selectedSupplier, setSelectedSupplier] = useState<any | null>(null);
 
   useEffect(() => {
-    async function loadSuppliers() {
+    async function loadSuppliersAndProducts() {
       try {
         setLoading(true);
-        const res = await fetch('/api/suppliers');
-        const json = await res.json();
-        if (json.success) {
-          setSuppliers(json.data);
+        const [supRes, prodRes] = await Promise.all([
+          fetch('/api/suppliers'),
+          fetch('/api/products'),
+        ]);
+        const supJson = await supRes.json();
+        const prodJson = await prodRes.json();
+
+        if (supJson.success) {
+          setSuppliers(supJson.data || []);
+        }
+        if (prodJson.success) {
+          setDbProducts(prodJson.data || []);
         }
       } catch (err) {
         console.error('Error fetching suppliers:', err);
@@ -43,7 +52,7 @@ export function SuppliersView() {
         setLoading(false);
       }
     }
-    loadSuppliers();
+    loadSuppliersAndProducts();
   }, []);
 
   const combinedSuppliers = useMemo(() => {
@@ -51,26 +60,27 @@ export function SuppliersView() {
 
     // 1. Existing DB Suppliers
     suppliers.forEach((s) => {
-      if (s.companyName) {
-        map.set(s.companyName.toLowerCase().trim(), { ...s, supplierProducts: s.supplierProducts || [] });
+      if (s.companyName && s.companyName.trim()) {
+        map.set(s.companyName.toLowerCase().trim(), { ...s, supplierProducts: Array.isArray(s.supplierProducts) ? [...s.supplierProducts] : [] });
       }
     });
 
-    // 2. Combine companies from past data entries in approvedLogItems
+    // 2. Combine companies and product items from approvedLogItems past data
     approvedLogItems.forEach((item) => {
-      const cName = (item.supplierName || 'Vendor').trim();
+      const cName = (item.supplierName || item.newCompanyName || '').trim();
+      if (!cName || cName.toLowerCase() === 'vendor') return;
+
       const cKey = cName.toLowerCase();
 
       if (!map.has(cKey)) {
         map.set(cKey, {
           id: `sup_log_${Math.abs(cKey.split('').reduce((acc: number, char: string) => (acc << 5) - acc + char.charCodeAt(0), 0))}`,
           companyName: cName,
-          gstNumber: item.gstNumber || '33AAACG123456789',
-          phone: item.phone || '+91 98422 55555',
-          address: item.address || 'Coimbatore, Tamil Nadu',
-          email: item.email || null,
-          contactPerson: item.contactPerson || null,
-          rating: 4.8,
+          gstNumber: item.gstNumber || item.newGstNumber || '33AAACG123456789',
+          phone: item.phone || item.newPhone || '+91 98422 55555',
+          address: item.address || item.newAddress || 'Coimbatore, Tamil Nadu',
+          email: item.email || item.newEmail || null,
+          contactPerson: item.contactPerson || item.newContactPerson || null,
           status: 'ACTIVE',
           supplierProducts: [],
         });
@@ -78,13 +88,13 @@ export function SuppliersView() {
 
       const existingSup = map.get(cKey)!;
       if (!existingSup.supplierProducts) existingSup.supplierProducts = [];
-      const prodName = item.productName || 'Solar Material';
+      const prodName = (item.productName || 'Solar Material').trim();
       const existsProd = existingSup.supplierProducts.some(
-        (sp: any) => sp.product?.name === prodName
+        (sp: any) => sp.product?.name?.toLowerCase().trim() === prodName.toLowerCase()
       );
       if (!existsProd) {
         existingSup.supplierProducts.push({
-          id: item.id,
+          id: item.id || `sp_${Date.now()}_${Math.random()}`,
           basePrice: item.basePrice || 0,
           gstPercentage: item.gstPercentage || 18,
           effectivePrice: item.effectivePrice || 0,
@@ -99,8 +109,56 @@ export function SuppliersView() {
       }
     });
 
+    // 3. Combine products from dbProducts (from /api/products)
+    dbProducts.forEach((p) => {
+      if (p.supplierProducts && Array.isArray(p.supplierProducts)) {
+        p.supplierProducts.forEach((sp: any) => {
+          if (sp.supplier?.companyName && sp.supplier.companyName.trim()) {
+            const cName = sp.supplier.companyName.trim();
+            const cKey = cName.toLowerCase();
+
+            if (!map.has(cKey)) {
+              map.set(cKey, {
+                id: sp.supplier.id,
+                companyName: cName,
+                gstNumber: sp.supplier.gstNumber || '33AAACG123456789',
+                phone: sp.supplier.phone || '+91 98422 55555',
+                address: sp.supplier.address || 'Coimbatore, Tamil Nadu',
+                email: sp.supplier.email || null,
+                contactPerson: sp.supplier.contactPerson || null,
+                status: 'ACTIVE',
+                supplierProducts: [],
+              });
+            }
+
+            const existingSup = map.get(cKey)!;
+            if (!existingSup.supplierProducts) existingSup.supplierProducts = [];
+            const prodName = (p.name || 'Solar Material').trim();
+            const existsProd = existingSup.supplierProducts.some(
+              (itemSp: any) => itemSp.product?.name?.toLowerCase().trim() === prodName.toLowerCase()
+            );
+            if (!existsProd) {
+              existingSup.supplierProducts.push({
+                id: sp.id,
+                basePrice: sp.basePrice || 0,
+                gstPercentage: sp.gstPercentage || 18,
+                effectivePrice: sp.effectivePrice || 0,
+                invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
+                product: {
+                  name: prodName,
+                  category: p.category || 'Solar Equipment',
+                  specification: p.specification || 'Standard Spec',
+                  brand: p.brand || 'Standard Make',
+                },
+              });
+            }
+          }
+        });
+      }
+    });
+
     return Array.from(map.values());
-  }, [suppliers, approvedLogItems]);
+  }, [suppliers, approvedLogItems, dbProducts]);
 
   const filteredSuppliers = useMemo(() => {
     if (!search.trim()) return combinedSuppliers;
