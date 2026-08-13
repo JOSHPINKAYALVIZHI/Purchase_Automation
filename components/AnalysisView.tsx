@@ -674,24 +674,42 @@ export function AnalysisView() {
           </div>
 
           <div className="flex items-center space-x-2 shrink-0">
-            {/* Clean Year Navigation Control (< 2026 >) */}
+            {/* Infinite Year Input + Stepper Controls */}
             <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold shadow-sm">
               <button
                 type="button"
-                onClick={() => setSelectedYear(String(Number(selectedYear) - 1))}
+                onClick={() => {
+                  const newYr = String(Number(selectedYear) - 1);
+                  setSelectedYear(newYr);
+                  setCurrentMonthDate(new Date(Number(newYr), currentMonthDate.getMonth(), 1));
+                }}
                 className="p-1 rounded-lg hover:bg-white text-slate-700 transition"
                 title="Previous Year"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
 
-              <span className="font-extrabold text-slate-900 text-xs px-2.5">
-                {selectedYear}
-              </span>
+              <input
+                type="number"
+                value={selectedYear}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedYear(val);
+                  if (val && !isNaN(Number(val))) {
+                    setCurrentMonthDate(new Date(Number(val), currentMonthDate.getMonth(), 1));
+                  }
+                }}
+                placeholder="Year"
+                className="w-16 bg-white border border-slate-300 rounded-lg text-center font-black text-slate-900 py-0.5 focus:outline-none focus:border-emerald-600 text-xs shadow-inner"
+              />
 
               <button
                 type="button"
-                onClick={() => setSelectedYear(String(Number(selectedYear) + 1))}
+                onClick={() => {
+                  const newYr = String(Number(selectedYear) + 1);
+                  setSelectedYear(newYr);
+                  setCurrentMonthDate(new Date(Number(newYr), currentMonthDate.getMonth(), 1));
+                }}
                 className="p-1 rounded-lg hover:bg-white text-slate-700 transition"
                 title="Next Year"
               >
@@ -823,17 +841,18 @@ export function AnalysisView() {
                 ))}
               </select>
 
-              <select
+              <input
+                type="number"
                 value={currentMonthDate.getFullYear()}
-                onChange={(e) => handleYearSelectChange(Number(e.target.value))}
-                className="bg-transparent font-extrabold text-slate-900 text-xs px-1 py-0.5 focus:outline-none cursor-pointer border-l border-slate-300 pl-1"
-              >
-                {availableYears.map((yr) => (
-                  <option key={yr} value={yr}>
-                    {yr}
-                  </option>
-                ))}
-              </select>
+                onChange={(e) => {
+                  const newYr = Number(e.target.value);
+                  if (newYr && !isNaN(newYr)) {
+                    setCurrentMonthDate(new Date(newYr, currentMonthDate.getMonth(), 1));
+                    setSelectedYear(String(newYr));
+                  }
+                }}
+                className="w-16 bg-white border border-slate-300 rounded text-center font-extrabold text-slate-900 py-0.5 focus:outline-none focus:border-emerald-600 text-xs ml-1"
+              />
 
               <button
                 type="button"
