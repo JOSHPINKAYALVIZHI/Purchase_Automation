@@ -86,7 +86,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             />
             <div className="h-7 w-[2px] bg-slate-300 hidden xl:block" />
             <span className="font-black text-emerald-700 text-lg sm:text-xl tracking-tight hidden xl:block whitespace-nowrap">
-              Purchase Tracker
+              JESUANS ERP
             </span>
           </div>
 
@@ -114,22 +114,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
 
           {/* Right Header Controls: Admin Approval Badge & User Role Profile Switcher */}
           <div className="flex items-center space-x-3">
-            {/* Admin Approval Notification Badge */}
-            {isAdmin && (
-              <button
-                onClick={() => setShowApprovalsModal(true)}
-                className="relative px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition flex items-center space-x-2 text-xs sm:text-sm font-extrabold shadow-sm"
-                title="Procurement Approvals"
-              >
-                <Bell className="h-4.5 w-4.5 text-amber-700" />
-                <span className="hidden sm:inline">Requests</span>
-                {pendingCount > 0 && (
-                  <span className="h-5 min-w-[22px] px-1.5 bg-amber-600 text-white rounded-full text-[11px] font-black flex items-center justify-center animate-pulse">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            )}
+
 
             {/* Current User Session Badge */}
             <div className="flex items-center space-x-3 bg-slate-100 p-2 pl-3.5 rounded-2xl border border-slate-200 text-xs sm:text-sm shadow-sm">
@@ -246,7 +231,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 type="submit"
                 className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-md shadow-emerald-500/20"
               >
-                Sign In to Platform
+                Sign In
               </button>
             </form>
           </div>
@@ -313,18 +298,34 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                     </div>
 
                     {/* Item list inside request */}
-                    <div className="space-y-1.5 bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                    <div className="space-y-2 bg-white p-3 rounded-xl border border-slate-200 text-xs">
                       {req.items.map((it: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between text-[11px]">
-                          <span className="font-bold text-slate-800">
-                            {it.name} <span className="text-slate-400 font-normal">x {it.quantity || 1}</span>
-                          </span>
-                          <span className="text-emerald-700 font-extrabold">
-                            ₹{((it.effectivePrice || it.basePrice || 0) * (it.quantity || 1)).toLocaleString('en-IN')}
-                          </span>
+                        <div key={idx} className="space-y-0.5 border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-slate-800">
+                              {it.productName || it.name} <span className="text-slate-400 font-normal">x {it.quantity || 1} {it.unit || ''}</span>
+                            </span>
+                            <span className="text-emerald-700 font-extrabold">
+                              ₹{((it.effectivePrice || it.basePrice || 0) * (it.quantity || 1)).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          {(it.kwRating || it.specification) && (
+                            <div className="flex items-center space-x-1.5 text-[10px]">
+                              {it.kwRating && (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-300">
+                                  ⚡ {it.kwRating}
+                                </span>
+                              )}
+                              {it.specification && (
+                                <span className="text-slate-600 font-medium truncate">
+                                  📋 {it.specification}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
-                      <div className="border-t border-slate-100 pt-1 flex justify-between font-black text-slate-900 text-xs">
+                      <div className="border-t border-slate-200 pt-1.5 flex justify-between font-black text-slate-900 text-xs">
                         <span>Total Order Amount:</span>
                         <span className="text-emerald-700">₹{req.totalAmount.toLocaleString('en-IN')}</span>
                       </div>
@@ -342,7 +343,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                           onClick={() => approveRequest(req.id)}
                           className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm"
                         >
-                          Approve Order & Send to Log
+                          Approve
                         </button>
                       </div>
                     )}

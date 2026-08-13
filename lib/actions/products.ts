@@ -203,6 +203,14 @@ export async function addFullProductQuote(input: any) {
   const effectivePrice = Number((basePrice * (1 + gstPercentage / 100)).toFixed(2));
   const totalAmount = parseFloat(input.totalAmount) || effectivePrice;
 
+  let quoteDate = new Date();
+  if (input.date) {
+    const parsed = new Date(input.date);
+    if (!isNaN(parsed.getTime())) {
+      quoteDate = parsed;
+    }
+  }
+
   const supplierProduct = await prisma.supplierProduct.upsert({
     where: {
       supplierId_productId: {
@@ -217,7 +225,9 @@ export async function addFullProductQuote(input: any) {
       totalAmount,
       discount: input.discount?.trim() || null,
       invoiceNo: input.invoiceNo?.trim() || null,
-      validUntil: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      quotationDate: quoteDate,
+      updatedAt: quoteDate,
+      validUntil: new Date(quoteDate.getTime() + 60 * 24 * 60 * 60 * 1000),
     },
     create: {
       supplierId: targetSupplierId,
@@ -228,7 +238,10 @@ export async function addFullProductQuote(input: any) {
       totalAmount,
       discount: input.discount?.trim() || null,
       invoiceNo: input.invoiceNo?.trim() || null,
-      validUntil: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      quotationDate: quoteDate,
+      createdAt: quoteDate,
+      updatedAt: quoteDate,
+      validUntil: new Date(quoteDate.getTime() + 60 * 24 * 60 * 60 * 1000),
       leadTime: 3,
       minimumOrderQuantity: 1,
     },

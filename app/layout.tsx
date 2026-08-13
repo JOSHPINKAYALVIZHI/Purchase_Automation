@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Purchase Tracker - JESUANS Solar',
+  title: 'JESUANS ERP - JESUANS Solar',
   description: 'Solar Procurement, Purchase Tracking & Supplier Management Platform',
 };
 

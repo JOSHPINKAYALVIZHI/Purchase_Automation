@@ -58,6 +58,36 @@ export async function createPurchaseOrder(input: CreatePOInput) {
   const year = new Date().getFullYear();
   const poNumber = `PO-${year}-${String(count + 1).padStart(5, '0')}`;
 
+  // Ensure creator user exists to prevent foreign key constraint violation
+  let userId = input.createdById;
+  if (userId) {
+    const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existingUser) {
+      const fallbackUser = await prisma.user.upsert({
+        where: { email: 'admin@jesuans.com' },
+        update: {},
+        create: {
+          id: userId,
+          name: 'JESUANS Admin',
+          email: 'admin@jesuans.com',
+          role: 'ADMIN',
+        },
+      });
+      userId = fallbackUser.id;
+    }
+  } else {
+    const defaultUser = await prisma.user.upsert({
+      where: { email: 'admin@jesuans.com' },
+      update: {},
+      create: {
+        name: 'JESUANS Admin',
+        email: 'admin@jesuans.com',
+        role: 'ADMIN',
+      },
+    });
+    userId = defaultUser.id;
+  }
+
   let grandTotal = 0;
   const itemsData = input.items.map((item) => {
     const itemSubtotal = item.unitPrice * item.quantity;
@@ -77,7 +107,7 @@ export async function createPurchaseOrder(input: CreatePOInput) {
     data: {
       poNumber,
       supplierId: input.supplierId,
-      createdById: input.createdById,
+      createdById: userId,
       status: 'PENDING',
       totalAmount: grandTotal,
       items: {

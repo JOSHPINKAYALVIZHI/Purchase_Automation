@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, FileSpreadsheet, Filter, Download, ArrowUpDown, CheckSquare, Square } from 'lucide-react';
+import { Search, FileSpreadsheet, Filter, Download, ArrowUpDown, CheckSquare, Square, Trash2, AlertTriangle, X } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 export function PurchaseLogsView() {
@@ -10,6 +10,20 @@ export function PurchaseLogsView() {
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [deletedLogIds, setDeletedLogIds] = useState<string[]>([]);
+  
+  // State for Secondary Confirmation Modal on Removal
+  const [logToDelete, setLogToDelete] = useState<any | null>(null);
+
+  useEffect(() => {
+    // Load saved deleted log IDs
+    const savedDeleted = localStorage.getItem('jesuans_deleted_log_ids');
+    if (savedDeleted) {
+      try {
+        setDeletedLogIds(JSON.parse(savedDeleted));
+      } catch (e) {}
+    }
+  }, []);
 
   useEffect(() => {
     async function loadLogs() {
@@ -38,7 +52,7 @@ export function PurchaseLogsView() {
                   effectivePrice: sp.effectivePrice,
                   invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
                   discount: sp.discount || '—',
-                  date: sp.updatedAt ? new Date(sp.updatedAt).toLocaleDateString('en-IN') : '2026-07-24',
+                  date: sp.updatedAt ? new Date(sp.updatedAt).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN'),
                 });
               });
             }
@@ -54,10 +68,23 @@ export function PurchaseLogsView() {
     loadLogs();
   }, []);
 
-  // Merge approved employee procurement orders into Purchase Logs table
+  const promptRemoveLog = (log: any) => {
+    setLogToDelete(log);
+  };
+
+  const confirmRemoveLog = () => {
+    if (!logToDelete) return;
+    const updated = [...deletedLogIds, logToDelete.id];
+    setDeletedLogIds(updated);
+    localStorage.setItem('jesuans_deleted_log_ids', JSON.stringify(updated));
+    setLogToDelete(null);
+  };
+
+  // Merge approved employee procurement orders into Purchase Logs table (excluding deleted)
   const allCombinedLogs = useMemo(() => {
-    return [...approvedLogItems, ...logs];
-  }, [logs, approvedLogItems]);
+    const combined = [...approvedLogItems, ...logs];
+    return combined.filter((l) => !deletedLogIds.includes(l.id));
+  }, [logs, approvedLogItems, deletedLogIds]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -195,6 +222,7 @@ export function PurchaseLogsView() {
                   <th className="py-3.5 px-3">GST %</th>
                   <th className="py-3.5 px-3 text-emerald-700">With GST Rate</th>
                   <th className="py-3.5 px-3 text-emerald-700">Discount</th>
+                  <th className="py-3.5 px-3 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-[11px]">
@@ -241,11 +269,74 @@ export function PurchaseLogsView() {
                       <td className="py-3 px-3 text-slate-600">{log.gstPercentage}%</td>
                       <td className="py-3 px-3 font-black text-emerald-700">₹{log.effectivePrice.toLocaleString('en-IN')}</td>
                       <td className="py-3 px-3 font-bold text-emerald-600">{log.discount}</td>
+                      {/* Action / Remove Button Column with Confirmation */}
+                      <td className="py-3 px-3 text-center">
+                        <button
+                          onClick={() => promptRemoveLog(log)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition border border-transparent hover:border-rose-200"
+                          title="Remove from Purchase Log"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ⚠️ REMOVE CONFIRMATION MODAL */}
+      {logToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl relative text-slate-900 animate-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setLogToDelete(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
+              <div className="p-3 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-lg">Confirm Item Removal</h3>
+                <p className="text-xs text-rose-600 font-bold">Secondary Removal Verification</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-slate-700">
+              <p className="font-extrabold text-slate-900 text-sm">
+                Are you sure you want to remove this item from the Purchase Log?
+              </p>
+              <div className="pt-2 space-y-1 font-semibold text-slate-600">
+                <div>• <strong className="text-slate-900">Item:</strong> {logToDelete.productName}</div>
+                <div>• <strong className="text-slate-900">Vendor:</strong> {logToDelete.supplierName}</div>
+                <div>• <strong className="text-slate-900">Invoice No:</strong> {logToDelete.invoiceNo}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setLogToDelete(null)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveLog}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-rose-500/25 transition flex items-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Confirm & Remove</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

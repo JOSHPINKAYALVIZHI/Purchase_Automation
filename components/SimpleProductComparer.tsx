@@ -30,6 +30,8 @@ interface CartItem {
   id: string;
   productId: string;
   productName: string;
+  kwRating?: string;
+  specification?: string;
   unit: string;
   supplierId: string;
   supplierName: string;
@@ -75,6 +77,12 @@ export function SimpleProductComparer() {
   const [allSuppliersList, setAllSuppliersList] = useState<any[]>([]);
   const [submittingProduct, setSubmittingProduct] = useState<boolean>(false);
   const [addProductSuccessMsg, setAddProductSuccessMsg] = useState<string>('');
+
+  // Add To Cart Details Prompt Modal State (KW & Specification)
+  const [showAddToCartDetailsModal, setShowAddToCartDetailsModal] = useState<boolean>(false);
+  const [pendingCartOffer, setPendingCartOffer] = useState<any | null>(null);
+  const [cartKwRating, setCartKwRating] = useState<string>('');
+  const [cartSpecification, setCartSpecification] = useState<string>('');
 
   // Add Product Form State
   const [formProductName, setFormProductName] = useState<string>('');
@@ -210,19 +218,9 @@ export function SimpleProductComparer() {
     }
   };
 
-  // Compute unique Categories dynamically with clean normalization & defaults
+  // Compute unique Categories dynamically strictly from actual products in database
   const uniqueCategories = useMemo(() => {
-    const defaults = [
-      'Inverters',
-      'Solar Panels',
-      'DC Cable',
-      'DCDB Box',
-      'ACDB Box',
-      'Batteries',
-      'Structure MMS',
-      'Solar Equipment',
-    ];
-    const cats = new Set<string>(defaults);
+    const cats = new Set<string>();
     products.forEach((p) => {
       if (p.category && p.category.trim()) {
         cats.add(normalizeCategory(p.category));
@@ -310,50 +308,49 @@ export function SimpleProductComparer() {
     setShowLogModal(true);
   };
 
-  // Add Item to Cart
+  // Open Add To Cart Details Prompt Modal (Ask KW & Specification)
   const handleAddToCart = (offer: any) => {
+    setPendingCartOffer(offer);
+    setCartKwRating('');
+    setCartSpecification(selectedProduct?.specification || selectedProduct?.name || '');
+    setShowAddToCartDetailsModal(true);
+  };
+
+  // Confirm Add To Cart with entered KW & Specification
+  const handleConfirmAddToCartSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingCartOffer || !selectedProduct) return;
+
+    const offer = pendingCartOffer;
     const edit = editedPrices[offer.id] || { basePrice: offer.basePrice, gstPercentage: offer.gstPercentage };
     const effectivePrice = Number((edit.basePrice * (1 + edit.gstPercentage / 100)).toFixed(2));
 
-    const cartItemId = `${offer.supplier.id}_${selectedProduct.id}`;
+    const cartItemId = `${offer.supplier.id}_${selectedProduct.id}_${Date.now()}`;
 
-    setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.id === cartItemId);
-      if (existing) {
-        return prevCart.map((item) =>
-          item.id === cartItemId
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-                basePrice: edit.basePrice,
-                gstPercentage: edit.gstPercentage,
-                effectivePrice,
-              }
-            : item
-        );
-      } else {
-        return [
-          ...prevCart,
-          {
-            id: cartItemId,
-            productId: selectedProduct.id,
-            productName: selectedProduct.name,
-            unit: selectedProduct.unit || 'Pcs',
-            supplierId: offer.supplier.id,
-            supplierName: offer.supplier.companyName,
-            supplierPhone: offer.supplier.phone,
-            contactPerson: offer.supplier.contactPerson,
-            basePrice: edit.basePrice,
-            gstPercentage: edit.gstPercentage,
-            effectivePrice,
-            quantity: offer.minimumOrderQuantity || 10,
-            leadTime: offer.leadTime,
-            invoiceNo: offer.invoiceNo || 'FSCH/00139/25-26',
-          },
-        ];
-      }
-    });
+    setCart((prevCart) => [
+      ...prevCart,
+      {
+        id: cartItemId,
+        productId: selectedProduct.id,
+        productName: selectedProduct.name,
+        kwRating: cartKwRating.trim(),
+        specification: cartSpecification.trim(),
+        unit: selectedProduct.unit || 'Pcs',
+        supplierId: offer.supplier.id,
+        supplierName: offer.supplier.companyName,
+        supplierPhone: offer.supplier.phone,
+        contactPerson: offer.supplier.contactPerson,
+        basePrice: edit.basePrice,
+        gstPercentage: edit.gstPercentage,
+        effectivePrice,
+        quantity: offer.minimumOrderQuantity || 10,
+        leadTime: offer.leadTime,
+        invoiceNo: offer.invoiceNo || 'FSCH/00139/25-26',
+      },
+    ]);
 
+    setShowAddToCartDetailsModal(false);
+    setPendingCartOffer(null);
     setShowCartDrawer(true);
   };
 
@@ -777,8 +774,22 @@ export function SimpleProductComparer() {
                         <div>
                           <h4 className="font-extrabold text-slate-900">{item.productName}</h4>
                           <span className="text-[11px] text-emerald-700 font-bold block">{item.supplierName}</span>
+                          {(item.kwRating || item.specification) && (
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[10px]">
+                              {item.kwRating && (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 font-extrabold border border-emerald-300">
+                                  ⚡ {item.kwRating}
+                                </span>
+                              )}
+                              {item.specification && (
+                                <span className="px-1.5 py-0.5 rounded bg-white text-slate-700 font-bold border border-slate-200">
+                                  📋 {item.specification}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {item.supplierPhone && (
-                            <span className="text-[10px] text-slate-600 font-semibold flex items-center gap-1 mt-0.5">
+                            <span className="text-[10px] text-slate-600 font-semibold flex items-center gap-1 mt-1">
                               <Phone className="h-3 w-3 text-emerald-600 shrink-0" />
                               <span>{item.supplierPhone}</span>
                               {item.contactPerson ? <span className="text-slate-400 font-medium">({item.contactPerson})</span> : null}
@@ -855,21 +866,13 @@ export function SimpleProductComparer() {
                   </div>
                 </div>
 
-                {/* Final Order Now / Request Approval Button */}
+                {/* Final Order Now Execution Button */}
                 <button
                   onClick={handleCheckout}
-                  className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center space-x-2 ${
-                    isAdmin
-                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25'
-                      : 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/25'
-                  }`}
+                  className="w-full py-3.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/25 bg-emerald-600 hover:bg-emerald-700 transition flex items-center justify-center space-x-2"
                 >
                   <CheckCircle2 className="h-5 w-5" />
-                  <span>
-                    {isAdmin
-                      ? 'Order Now (Approve & Generate Purchase Order)'
-                      : 'Send Procurement Request to Admin for Approval'}
-                  </span>
+                  <span>Order Now & Send to Purchase Log</span>
                 </button>
               </div>
             )}
@@ -1287,9 +1290,82 @@ export function SimpleProductComparer() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4" />
-                      <span>Save Product & Quote</span>
+                      <span>Save Product</span>
                     </>
                   )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ ASK KW & SPECIFICATION ADD TO CART PROMPT MODAL */}
+      {showAddToCartDetailsModal && pendingCartOffer && selectedProduct && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-6 shadow-2xl relative text-slate-900 animate-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setShowAddToCartDetailsModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center space-x-3 border-b border-slate-200 pb-4">
+              <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200">
+                <Zap className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-lg">Add to Cart Details</h3>
+                <p className="text-xs text-slate-500 font-bold">
+                  {selectedProduct.name} • <span className="text-emerald-700">{pendingCartOffer.supplier.companyName}</span>
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmAddToCartSubmit} className="space-y-4">
+              <div className="space-y-1.5 text-xs">
+                <label className="font-extrabold text-slate-700 block">
+                  Capacity / KW Rating <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 100 KW, 50 KW, 5 KW..."
+                  value={cartKwRating}
+                  onChange={(e) => setCartKwRating(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-900 focus:outline-none focus:border-emerald-600 placeholder:font-normal text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5 text-xs">
+                <label className="font-extrabold text-slate-700 block">
+                  Specification Details <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="e.g. 3-Phase On-Grid Solar Inverter, Monocrystalline Half-Cell..."
+                  value={cartSpecification}
+                  onChange={(e) => setCartSpecification(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-semibold text-slate-900 focus:outline-none focus:border-emerald-600 placeholder:font-normal text-xs resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end space-x-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddToCartDetailsModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/25 transition flex items-center space-x-2"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>Confirm & Add to Cart</span>
                 </button>
               </div>
             </form>

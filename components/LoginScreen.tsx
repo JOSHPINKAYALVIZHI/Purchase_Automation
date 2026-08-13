@@ -41,7 +41,7 @@ export function LoginScreen() {
           />
           <div className="pt-1">
             <h2 className="font-black text-emerald-700 text-2xl tracking-tight">
-              Purchase Tracker
+              JESUANS ERP
             </h2>
             <p className="text-xs text-slate-500 font-bold">
               Solar Procurement & Supplier Management System
@@ -92,7 +92,7 @@ export function LoginScreen() {
             type="submit"
             className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/25 transition flex items-center justify-center space-x-2 mt-2"
           >
-            <span>Sign In to Platform</span>
+            <span>Sign In</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         </form>

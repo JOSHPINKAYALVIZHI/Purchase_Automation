@@ -39,6 +39,7 @@ interface AuthContextType {
   clearNotifications: () => void;
   purchaseLogStatuses: Record<string, 'SENT' | 'RECEIVED'>;
   toggleLogStatus: (logId: string) => void;
+  addDirectLogItem: (item: any) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,15 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const cleanUser = usernameInput.trim().toLowerCase();
     const cleanPass = passwordInput.trim();
 
-    if (cleanUser === 'admin' && cleanPass === 'admin_1234') {
+    if (cleanUser === 'admin' && cleanPass === 'admin@123') {
       const session: UserSession = { username: 'Admin', role: 'ADMIN' };
-      setUser(session);
-      localStorage.setItem('jesuans_user_session', JSON.stringify(session));
-      return { success: true };
-    }
-
-    if (cleanUser === 'employee' && cleanPass === 'employee_2026') {
-      const session: UserSession = { username: 'Employee', role: 'EMPLOYEE' };
       setUser(session);
       localStorage.setItem('jesuans_user_session', JSON.stringify(session));
       return { success: true };
@@ -171,9 +165,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       gstNumber: item.gstNumber || '33AAACG123456789',
       phone: item.supplierPhone || item.supplier?.phone || '',
       address: item.address || 'Coimbatore',
-      productName: item.name || item.productName || 'Solar Material',
+      productName: item.productName || item.name || 'Solar Material',
       category: item.category || 'Solar Equipment',
-      specification: item.specification || 'Standard Spec',
+      specification: item.kwRating
+        ? `${item.kwRating} • ${item.specification || 'Standard Spec'}`
+        : item.specification || 'Standard Spec',
       brand: item.brand || 'Standard Make',
       hsn: item.hsn || '8541',
       basePrice: item.basePrice || 0,
@@ -244,6 +240,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('jesuans_log_statuses', JSON.stringify(updated));
   };
 
+  const addDirectLogItem = (newItem: any) => {
+    const basePrice = Number(newItem.basePrice) || 0;
+    const gstPercentage = Number(newItem.gstPercentage) || 18;
+    const effectivePrice = basePrice * (1 + gstPercentage / 100);
+
+    const logEntry = {
+      id: `LOG_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      supplierName: newItem.supplierName || newItem.newCompanyName || 'Vendor',
+      gstNumber: newItem.newGstNumber || '33AAACG123456789',
+      phone: newItem.newPhone || '',
+      address: newItem.newAddress || 'Coimbatore',
+      productName: newItem.productName || 'Solar Material',
+      category: newItem.category || 'Solar Equipment',
+      specification: newItem.kwRating
+        ? `${newItem.kwRating} • ${newItem.specification || 'Standard Spec'}`
+        : newItem.specification || 'Standard Spec',
+      brand: newItem.brand || 'Standard Make',
+      hsn: newItem.hsn || '8541',
+      basePrice,
+      gstPercentage,
+      effectivePrice,
+      invoiceNo: newItem.invoiceNo || `FSCH/${Math.floor(10000 + Math.random() * 90000)}/25-26`,
+      discount: newItem.discount || '—',
+      date: newItem.date || new Date().toISOString().split('T')[0],
+    };
+
+    const updatedApprovedItems = [logEntry, ...approvedLogItems];
+    setApprovedLogItems(updatedApprovedItems);
+    localStorage.setItem('jesuans_approved_log_items', JSON.stringify(updatedApprovedItems));
+
+    const updatedStatuses: Record<string, 'SENT' | 'RECEIVED'> = {
+      ...purchaseLogStatuses,
+      [logEntry.id]: 'SENT',
+    };
+    setPurchaseLogStatuses(updatedStatuses);
+    localStorage.setItem('jesuans_log_statuses', JSON.stringify(updatedStatuses));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -259,6 +293,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearNotifications,
         purchaseLogStatuses,
         toggleLogStatus,
+        addDirectLogItem,
       }}
     >
       {children}
