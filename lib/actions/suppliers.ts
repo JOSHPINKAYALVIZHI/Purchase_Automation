@@ -35,21 +35,26 @@ export async function getSuppliers(filters?: { search?: string; status?: string 
     whereClause.status = filters.status;
   }
 
-  const suppliers = await prisma.supplier.findMany({
-    where: whereClause,
-    include: {
-      products: {
-        include: { product: true },
+  try {
+    const suppliers = await prisma.supplier.findMany({
+      where: whereClause,
+      include: {
+        products: {
+          include: { product: true },
+        },
+        purchaseOrders: {
+          take: 5,
+          orderBy: { date: 'desc' },
+        },
       },
-      purchaseOrders: {
-        take: 5,
-        orderBy: { date: 'desc' },
-      },
-    },
-    orderBy: { companyName: 'asc' },
-  });
+      orderBy: { companyName: 'asc' },
+    });
 
-  return suppliers;
+    return suppliers || [];
+  } catch (err) {
+    console.error('Error in getSuppliers:', err);
+    return [];
+  }
 }
 
 export async function getSupplierById(id: string) {

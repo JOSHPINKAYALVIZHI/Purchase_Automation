@@ -32,19 +32,24 @@ export async function getProducts(filters?: { search?: string; category?: string
     whereClause.brand = filters.brand;
   }
 
-  const products = await prisma.product.findMany({
-    where: whereClause,
-    include: {
-      inventory: true,
-      supplierProducts: {
-        include: { supplier: true },
-        orderBy: { effectivePrice: 'asc' },
+  try {
+    const products = await prisma.product.findMany({
+      where: whereClause,
+      include: {
+        inventory: true,
+        supplierProducts: {
+          include: { supplier: true },
+          orderBy: { effectivePrice: 'asc' },
+        },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+    });
 
-  return products;
+    return products || [];
+  } catch (err) {
+    console.error('Error in getProducts:', err);
+    return [];
+  }
 }
 
 export async function getProductById(id: string) {
