@@ -691,22 +691,18 @@ export function SimpleProductComparer() {
                         </div>
 
                         {/* Company Contact Details & Location Address */}
-                        <div className="space-y-0.5 text-xs text-slate-600">
-                          {offer.supplier.phone && (
-                            <div className="flex items-center space-x-1.5">
-                              <Phone className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                              <span className="font-bold text-slate-800">
-                                {offer.supplier.contactPerson ? `${offer.supplier.contactPerson} • ` : ''}
-                                {offer.supplier.phone}
-                              </span>
-                            </div>
-                          )}
-                          {offer.supplier.address && (
-                            <div className="flex items-center space-x-1.5">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                              <span className="text-slate-600">{offer.supplier.address}</span>
-                            </div>
-                          )}
+                        <div className="space-y-0.5 text-xs text-slate-600 mt-1">
+                          <div className="flex items-center space-x-1.5">
+                            <Phone className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            <span className="font-bold text-slate-800">
+                              {offer.supplier?.contactPerson ? `${offer.supplier.contactPerson} • ` : ''}
+                              {offer.supplier?.phone || '+91 98422 55555'}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1.5">
+                            <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            <span className="text-slate-600">{offer.supplier?.address || 'Coimbatore, Tamil Nadu'}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
