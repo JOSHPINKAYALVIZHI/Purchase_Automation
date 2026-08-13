@@ -356,6 +356,34 @@ export function SimpleProductComparer() {
 
       const json = await res.json();
       if (json.success) {
+        // Instant cross-menu dynamic synchronization
+        const selectedSup = combinedSuppliersList.find((s) => s.id === selectedSupplierId);
+        const compName = selectedSupplierId === 'OTHER' ? newCompanyName.trim() : (selectedSup?.companyName || 'Vendor Company');
+        const compPhone = selectedSupplierId === 'OTHER' ? newPhone.trim() : (selectedSup?.phone || '');
+        const compAddress = selectedSupplierId === 'OTHER' ? newAddress.trim() : (selectedSup?.address || '');
+        const compContact = selectedSupplierId === 'OTHER' ? newContactPerson.trim() : (selectedSup?.contactPerson || '');
+
+        addDirectLogItem({
+          date: new Date().toISOString().split('T')[0],
+          productName: formProductName.trim(),
+          category: finalCategory.trim() || 'Solar Equipment',
+          specification: formSpec.trim() || `${formProductName.trim()} - ${formBrand.trim() || 'Standard'}`,
+          brand: formBrand.trim() || 'Standard Solar',
+          hsn: formHsn.trim() || '8541',
+          basePrice: parseFloat(formBasePrice) || 0,
+          gstPercentage: parseFloat(formGstPercentage) || 18,
+          invoiceNo: formInvoiceNo.trim() || `FSCH/${Math.floor(10000 + Math.random() * 90000)}/25-26`,
+          discount: formDiscount.trim() || '—',
+          supplierName: compName,
+          phone: compPhone,
+          address: compAddress,
+          contactPerson: compContact,
+          newCompanyName: compName,
+          newPhone: compPhone,
+          newAddress: compAddress,
+          newContactPerson: compContact,
+        });
+
         setAddProductSuccessMsg('✅ Product & Quote added successfully!');
         setTimeout(() => setAddProductSuccessMsg(''), 4000);
         await loadProducts();
