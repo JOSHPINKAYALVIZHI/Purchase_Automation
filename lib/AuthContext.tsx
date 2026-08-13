@@ -55,6 +55,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
+
+    // Auto-wipe demo localStorage keys once so user browser matches clean DB
+    if (typeof window !== 'undefined' && !localStorage.getItem('jesuans_v3_clean_reset')) {
+      localStorage.removeItem('jesuans_approved_log_items');
+      localStorage.removeItem('jesuans_deleted_log_ids');
+      localStorage.removeItem('jesuans_log_statuses');
+      localStorage.removeItem('jesuans_contact_overrides');
+      localStorage.removeItem('jesuans_custom_products');
+      localStorage.removeItem('jesuans_cart');
+      localStorage.removeItem('jesuans_pending_requests');
+      localStorage.setItem('jesuans_v3_clean_reset', 'true');
+    }
+
     // Load saved user session
     const savedSession = localStorage.getItem('jesuans_user_session');
     if (savedSession) {
