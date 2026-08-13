@@ -162,27 +162,65 @@ export function SimpleProductComparer() {
     return Array.from(map.values());
   }, [products, approvedLogItems]);
 
+  // Dynamically combine DB suppliers + past log entry vendors for Add Product modal company dropdown
+  const combinedSuppliersList = useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Existing DB Suppliers
+    allSuppliersList.forEach((s) => {
+      if (s.companyName && s.companyName.trim()) {
+        map.set(s.companyName.toLowerCase().trim(), {
+          id: s.id,
+          companyName: s.companyName.trim(),
+          phone: s.phone || '',
+          address: s.address || '',
+          contactPerson: s.contactPerson || '',
+        });
+      }
+    });
+
+    // 2. Add suppliers from approvedLogItems past data
+    approvedLogItems.forEach((item) => {
+      const cName = (item.supplierName || item.newCompanyName || '').trim();
+      if (cName && cName.toLowerCase() !== 'vendor') {
+        const cKey = cName.toLowerCase();
+        if (!map.has(cKey)) {
+          map.set(cKey, {
+            id: `sup_log_${cKey}`,
+            companyName: cName,
+            phone: item.phone || item.newPhone || '',
+            address: item.address || item.newAddress || '',
+            contactPerson: item.contactPerson || item.newContactPerson || '',
+          });
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [allSuppliersList, approvedLogItems]);
+
   // Fetch suppliers list when Add Product modal opens
   const fetchSuppliersForModal = async () => {
     try {
       const res = await fetch('/api/suppliers');
       const json = await res.json();
       if (json.success) {
-        const sups = json.data || [];
-        setAllSuppliersList(sups);
-        if (sups.length > 0) {
-          setSelectedSupplierId(sups[0].id);
-        } else {
-          setSelectedSupplierId('OTHER');
-        }
+        setAllSuppliersList(json.data || []);
       }
     } catch (err) {
       console.error('Error fetching suppliers list:', err);
     }
   };
 
-  const handleOpenAddProductModal = () => {
-    fetchSuppliersForModal();
+  const handleOpenAddProductModal = async () => {
+    await fetchSuppliersForModal();
+
+    if (combinedSuppliersList.length > 0) {
+      setSelectedSupplierId(combinedSuppliersList[0].id);
+    } else {
+      setSelectedSupplierId('OTHER');
+    }
+
     if (combinedProducts.length > 0) {
       const firstP = combinedProducts[0];
       setSelectedExistingProductId(firstP.id);
@@ -1266,9 +1304,9 @@ export function SimpleProductComparer() {
                     onChange={(e) => setSelectedSupplierId(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-slate-900 focus:outline-none focus:border-blue-600 cursor-pointer"
                   >
-                    {allSuppliersList.map((sup) => (
+                    {combinedSuppliersList.map((sup) => (
                       <option key={sup.id} value={sup.id}>
-                        {sup.companyName}
+                        {sup.companyName} {sup.phone ? `(${sup.phone})` : ''}
                       </option>
                     ))}
                     <option value="OTHER">➕ Other / Add New Company...</option>
@@ -1276,7 +1314,7 @@ export function SimpleProductComparer() {
                 </div>
 
                 {/* Conditional Fields if "Other / Add New Company" is selected */}
-                {(selectedSupplierId === 'OTHER' || selectedSupplierId === '' || allSuppliersList.length === 0) && (
+                {(selectedSupplierId === 'OTHER' || selectedSupplierId === '' || combinedSuppliersList.length === 0) && (
                   <div className="bg-purple-50/70 border border-purple-200 p-4 rounded-2xl space-y-3 animate-in fade-in duration-150">
                     <div className="text-xs font-extrabold text-purple-900 flex items-center gap-1 border-b border-purple-200 pb-2">
                       <User className="h-3.5 w-3.5 text-purple-600" />
