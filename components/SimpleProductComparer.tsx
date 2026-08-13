@@ -162,7 +162,7 @@ export function SimpleProductComparer() {
     return Array.from(map.values());
   }, [products, approvedLogItems]);
 
-  // Dynamically combine DB suppliers + past log entry vendors for Add Product modal company dropdown
+  // Dynamically combine DB suppliers + past log entry vendors + offers + products for Add Product modal company dropdown
   const combinedSuppliersList = useMemo(() => {
     const map = new Map<string, any>();
 
@@ -196,8 +196,46 @@ export function SimpleProductComparer() {
       }
     });
 
+    // 3. Add suppliers from current offers
+    offers.forEach((o) => {
+      if (o.supplier?.companyName && o.supplier.companyName.trim()) {
+        const cName = o.supplier.companyName.trim();
+        const cKey = cName.toLowerCase();
+        if (!map.has(cKey)) {
+          map.set(cKey, {
+            id: o.supplier.id || `sup_offer_${cKey}`,
+            companyName: cName,
+            phone: o.supplier.phone || '',
+            address: o.supplier.address || '',
+            contactPerson: o.supplier.contactPerson || '',
+          });
+        }
+      }
+    });
+
+    // 4. Add suppliers from products
+    products.forEach((p) => {
+      if (p.supplierProducts && Array.isArray(p.supplierProducts)) {
+        p.supplierProducts.forEach((sp: any) => {
+          if (sp.supplier?.companyName && sp.supplier.companyName.trim()) {
+            const cName = sp.supplier.companyName.trim();
+            const cKey = cName.toLowerCase();
+            if (!map.has(cKey)) {
+              map.set(cKey, {
+                id: sp.supplier.id || `sup_prod_${cKey}`,
+                companyName: cName,
+                phone: sp.supplier.phone || '',
+                address: sp.supplier.address || '',
+                contactPerson: sp.supplier.contactPerson || '',
+              });
+            }
+          }
+        });
+      }
+    });
+
     return Array.from(map.values());
-  }, [allSuppliersList, approvedLogItems]);
+  }, [allSuppliersList, approvedLogItems, offers, products]);
 
   // Fetch suppliers list when Add Product modal opens
   const fetchSuppliersForModal = async () => {
@@ -213,10 +251,46 @@ export function SimpleProductComparer() {
   };
 
   const handleOpenAddProductModal = async () => {
-    await fetchSuppliersForModal();
+    let fetchedSups: any[] = [];
+    try {
+      const res = await fetch('/api/suppliers');
+      const json = await res.json();
+      if (json.success && json.data.length > 0) {
+        fetchedSups = json.data;
+        setAllSuppliersList(json.data);
+      }
+    } catch (err) {}
 
-    if (combinedSuppliersList.length > 0) {
-      setSelectedSupplierId(combinedSuppliersList[0].id);
+    const tempMap = new Map<string, any>();
+    fetchedSups.forEach((s) => {
+      if (s.companyName) tempMap.set(s.companyName.toLowerCase().trim(), s);
+    });
+    approvedLogItems.forEach((item) => {
+      const cName = (item.supplierName || item.newCompanyName || '').trim();
+      if (cName && cName.toLowerCase() !== 'vendor') {
+        tempMap.set(cName.toLowerCase(), { id: `sup_log_${cName.toLowerCase()}`, companyName: cName });
+      }
+    });
+    offers.forEach((o) => {
+      if (o.supplier?.companyName) {
+        const cName = o.supplier.companyName.trim();
+        tempMap.set(cName.toLowerCase(), { id: o.supplier.id || `sup_offer_${cName.toLowerCase()}`, companyName: cName });
+      }
+    });
+    products.forEach((p) => {
+      if (p.supplierProducts && Array.isArray(p.supplierProducts)) {
+        p.supplierProducts.forEach((sp: any) => {
+          if (sp.supplier?.companyName) {
+            const cName = sp.supplier.companyName.trim();
+            tempMap.set(cName.toLowerCase(), { id: sp.supplier.id || `sup_prod_${cName.toLowerCase()}`, companyName: cName });
+          }
+        });
+      }
+    });
+
+    const availList = Array.from(tempMap.values());
+    if (availList.length > 0) {
+      setSelectedSupplierId(availList[0].id);
     } else {
       setSelectedSupplierId('OTHER');
     }
