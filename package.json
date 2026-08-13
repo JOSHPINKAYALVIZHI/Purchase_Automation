@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "clean": "powershell -Command \"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .next\"",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
