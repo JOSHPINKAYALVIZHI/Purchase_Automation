@@ -193,12 +193,7 @@ export function SuppliersView() {
               </div>
 
               {/* Card Footer: Products Count Badge */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-1 text-amber-600 font-bold">
-                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  <span>{supplier.rating} Rating</span>
-                </div>
-
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end text-xs">
                 <span className="px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 group-hover:bg-emerald-600 group-hover:text-white transition flex items-center space-x-1">
                   <PackageCheck className="h-3.5 w-3.5" />
                   <span>{supplier.products?.length || 0} Products Supplied</span>
@@ -244,9 +239,6 @@ export function SuppliersView() {
               </div>
 
               <div className="text-left sm:text-right">
-                <span className="text-xs font-bold text-amber-600 block">
-                  ⭐ {selectedSupplier.rating} / 5.0 Vendor Rating
-                </span>
                 <span className="text-[11px] text-slate-500 block">
                   {selectedSupplier.address}
                 </span>

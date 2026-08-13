@@ -688,17 +688,6 @@ export function SimpleProductComparer() {
                             </span>
                           )}
                         </div>
-
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Truck className="h-3.5 w-3.5 text-slate-500" />
-                            Dispatch: <strong className="text-slate-700">{offer.leadTime} Days</strong>
-                          </span>
-                          <span className="flex items-center gap-1 text-amber-600 font-bold">
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                            {offer.supplier.rating} / 5.0
-                          </span>
-                        </div>
                       </div>
                     </div>
 
@@ -1028,57 +1017,7 @@ export function SimpleProductComparer() {
         </div>
       )}
 
-      {/* 💡 EXPLANATION MODAL (How Delivery Days & Vendor Ratings are Calculated) */}
-      {showMetricsHelp && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl relative text-slate-900">
-            <button
-              onClick={() => setShowMetricsHelp(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
-            >
-              <X className="h-5 w-5" />
-            </button>
 
-            <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
-              <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-                <HelpCircle className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-base">Delivery Days & Vendor Ratings Guide</h3>
-                <p className="text-xs text-slate-500">How these numbers are derived from supplier quotes</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 text-xs leading-relaxed text-slate-700">
-              <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 space-y-1">
-                <h4 className="font-extrabold text-blue-900 text-xs flex items-center gap-1.5">
-                  <Truck className="h-4 w-4 text-blue-600" />
-                  1. Delivery Days (Dispatch Lead Time)
-                </h4>
-                <p className="text-slate-600 text-[11px]">
-                  <strong>Calculation:</strong> Extracted from supplier SLA quotation terms in the Google Sheet. 
-                  - Local Tamil Nadu/Coimbatore warehouses dispatch within <strong>1 to 3 Days</strong>.
-                  - Out-of-state manufacturer shipments take <strong>4 to 7 Days</strong>.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
-                <h4 className="font-extrabold text-amber-900 text-xs flex items-center gap-1.5">
-                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                  2. Vendor Rating (1.0 to 5.0 ⭐)
-                </h4>
-                <p className="text-slate-700 text-[11px]">
-                  <strong>Calculation:</strong> Multi-factor score combining:
-                  - <strong>GST Portal Active Status</strong> (20%)
-                  - <strong>On-Time Delivery Rate</strong> (30%)
-                  - <strong>Pricing Competitiveness</strong> (30%)
-                  - <strong>Customer Feedback Score</strong> (20%)
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================= */}
       {/* 🚀 ADD NEW PRODUCT / QUOTE MODAL WITH COMPANY SELECTION  */}
