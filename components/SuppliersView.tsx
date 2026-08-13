@@ -17,7 +17,10 @@ import {
   User,
 } from 'lucide-react';
 
+import { useAuth } from '@/lib/AuthContext';
+
 export function SuppliersView() {
+  const { approvedLogItems } = useAuth();
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
@@ -43,18 +46,74 @@ export function SuppliersView() {
     loadSuppliers();
   }, []);
 
+  const combinedSuppliers = useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Existing DB Suppliers
+    suppliers.forEach((s) => {
+      if (s.companyName) {
+        map.set(s.companyName.toLowerCase().trim(), { ...s, supplierProducts: s.supplierProducts || [] });
+      }
+    });
+
+    // 2. Combine companies from past data entries in approvedLogItems
+    approvedLogItems.forEach((item) => {
+      const cName = (item.supplierName || 'Vendor').trim();
+      const cKey = cName.toLowerCase();
+
+      if (!map.has(cKey)) {
+        map.set(cKey, {
+          id: `sup_log_${Math.abs(cKey.split('').reduce((acc: number, char: string) => (acc << 5) - acc + char.charCodeAt(0), 0))}`,
+          companyName: cName,
+          gstNumber: item.gstNumber || '33AAACG123456789',
+          phone: item.phone || '+91 98422 55555',
+          address: item.address || 'Coimbatore, Tamil Nadu',
+          email: item.email || null,
+          contactPerson: item.contactPerson || null,
+          rating: 4.8,
+          status: 'ACTIVE',
+          supplierProducts: [],
+        });
+      }
+
+      const existingSup = map.get(cKey)!;
+      if (!existingSup.supplierProducts) existingSup.supplierProducts = [];
+      const prodName = item.productName || 'Solar Material';
+      const existsProd = existingSup.supplierProducts.some(
+        (sp: any) => sp.product?.name === prodName
+      );
+      if (!existsProd) {
+        existingSup.supplierProducts.push({
+          id: item.id,
+          basePrice: item.basePrice || 0,
+          gstPercentage: item.gstPercentage || 18,
+          effectivePrice: item.effectivePrice || 0,
+          invoiceNo: item.invoiceNo || 'FSCH/00139/25-26',
+          product: {
+            name: prodName,
+            category: item.category || 'Solar Equipment',
+            specification: item.specification || 'Standard Spec',
+            brand: item.brand || 'Standard Make',
+          },
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [suppliers, approvedLogItems]);
+
   const filteredSuppliers = useMemo(() => {
-    if (!search.trim()) return suppliers;
+    if (!search.trim()) return combinedSuppliers;
     const term = search.toLowerCase();
-    return suppliers.filter(
+    return combinedSuppliers.filter(
       (s) =>
         s.companyName.toLowerCase().includes(term) ||
-        s.gstNumber.toLowerCase().includes(term) ||
-        s.address.toLowerCase().includes(term) ||
-        s.phone.toLowerCase().includes(term) ||
+        (s.gstNumber && s.gstNumber.toLowerCase().includes(term)) ||
+        (s.address && s.address.toLowerCase().includes(term)) ||
+        (s.phone && s.phone.toLowerCase().includes(term)) ||
         (s.email && s.email.toLowerCase().includes(term))
     );
-  }, [suppliers, search]);
+  }, [combinedSuppliers, search]);
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">

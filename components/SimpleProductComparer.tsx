@@ -46,7 +46,7 @@ interface CartItem {
 }
 
 export function SimpleProductComparer() {
-  const { user, sendRequestToAdmin } = useAuth();
+  const { user, sendRequestToAdmin, approvedLogItems } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
   const [products, setProducts] = useState<any[]>([]);
@@ -125,6 +125,40 @@ export function SimpleProductComparer() {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  // Combine DB products + past log entry products dynamically
+  const combinedProducts = useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Existing DB Products
+    products.forEach((p) => {
+      if (p.name) {
+        map.set(p.name.toLowerCase().trim(), p);
+      }
+    });
+
+    // 2. Combine Products from approvedLogItems past data
+    approvedLogItems.forEach((item) => {
+      const pName = (item.productName || 'Solar Item').trim();
+      const pKey = pName.toLowerCase();
+
+      if (!map.has(pKey)) {
+        map.set(pKey, {
+          id: `prod_log_${Math.abs(pKey.split('').reduce((acc: number, char: string) => (acc << 5) - acc + char.charCodeAt(0), 0))}`,
+          name: pName,
+          category: normalizeCategory(item.category || 'Solar Equipment'),
+          brand: item.brand || 'Standard Make',
+          specification: item.specification || `${pName} - ${item.brand || 'Standard Make'}`,
+          hsn: item.hsn || '8541',
+          unit: 'Pcs',
+          inventory: [{ available: 20 }],
+          supplierProducts: [],
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [products, approvedLogItems]);
 
   // Fetch suppliers list when Add Product modal opens
   const fetchSuppliersForModal = async () => {
@@ -218,20 +252,20 @@ export function SimpleProductComparer() {
     }
   };
 
-  // Compute unique Categories dynamically strictly from actual products in database
+  // Compute unique Categories dynamically from combined products
   const uniqueCategories = useMemo(() => {
     const cats = new Set<string>();
-    products.forEach((p) => {
+    combinedProducts.forEach((p) => {
       if (p.category && p.category.trim()) {
         cats.add(normalizeCategory(p.category));
       }
     });
     return Array.from(cats).sort();
-  }, [products]);
+  }, [combinedProducts]);
 
   // Filter products by selected category dropdown & search query
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    return combinedProducts.filter((p) => {
       const pNormCat = normalizeCategory(p.category);
       const matchesCategory =
         selectedCategory === 'ALL' || pNormCat === selectedCategory;
@@ -243,7 +277,7 @@ export function SimpleProductComparer() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [products, selectedCategory, search]);
+  }, [combinedProducts, selectedCategory, search]);
 
   useEffect(() => {
     if (selectedCategory === 'ALL' && !search.trim()) {
@@ -259,7 +293,7 @@ export function SimpleProductComparer() {
     }
   }, [filteredProducts, selectedCategory, search]);
 
-  // Fetch offers for selected product
+  // Fetch offers for selected product & merge past log quotations
   useEffect(() => {
     if (!selectedProduct) return;
     async function loadOffers() {
@@ -267,19 +301,61 @@ export function SimpleProductComparer() {
         setLoading(true);
         const res = await fetch(`/api/quotations?productId=${selectedProduct.id}`);
         const json = await res.json();
+        let fetchedOffers = [];
         if (json.success) {
-          const fetchedOffers = json.data.quotations || [];
-          setOffers(fetchedOffers);
-          // Initialize local editable prices map
-          const initialEdits: Record<string, { basePrice: number; gstPercentage: number }> = {};
-          fetchedOffers.forEach((o: any) => {
-            initialEdits[o.id] = {
-              basePrice: o.basePrice,
-              gstPercentage: o.gstPercentage,
-            };
-          });
-          setEditedPrices(initialEdits);
+          fetchedOffers = json.data.quotations || [];
         }
+
+        // Also merge matching log items from approvedLogItems
+        const matchingLogOffers = approvedLogItems
+          .filter(
+            (item) =>
+              item.productName &&
+              item.productName.toLowerCase().trim() === selectedProduct.name.toLowerCase().trim()
+          )
+          .map((item) => ({
+            id: item.id,
+            basePrice: item.basePrice || 0,
+            gstPercentage: item.gstPercentage || 18,
+            effectivePrice: item.effectivePrice || 0,
+            invoiceNo: item.invoiceNo || 'FSCH/00139/25-26',
+            discount: item.discount || '—',
+            supplier: {
+              id: `sup_${item.supplierName}`,
+              companyName: item.supplierName || 'Vendor',
+              phone: item.phone || '+91 98422 55555',
+              address: item.address || 'Coimbatore',
+              rating: 4.8,
+            },
+            leadTime: 3,
+          }));
+
+        // Deduplicate offers by supplier company name
+        const combinedMap = new Map<string, any>();
+        fetchedOffers.forEach((o: any) => {
+          if (o.supplier?.companyName) {
+            combinedMap.set(o.supplier.companyName.toLowerCase().trim(), o);
+          }
+        });
+        matchingLogOffers.forEach((mo) => {
+          const sKey = mo.supplier.companyName.toLowerCase().trim();
+          if (!combinedMap.has(sKey)) {
+            combinedMap.set(sKey, mo);
+          }
+        });
+
+        const finalOffers = Array.from(combinedMap.values());
+        setOffers(finalOffers);
+
+        // Initialize local editable prices map
+        const initialEdits: Record<string, { basePrice: number; gstPercentage: number }> = {};
+        finalOffers.forEach((o: any) => {
+          initialEdits[o.id] = {
+            basePrice: o.basePrice,
+            gstPercentage: o.gstPercentage,
+          };
+        });
+        setEditedPrices(initialEdits);
       } catch (err) {
         console.error('Error fetching offers:', err);
       } finally {
@@ -287,7 +363,7 @@ export function SimpleProductComparer() {
       }
     }
     loadOffers();
-  }, [selectedProduct]);
+  }, [selectedProduct, approvedLogItems]);
 
   // Calculate sorted offers based on current (edited or original) effective prices
   const sortedOffers = useMemo(() => {
