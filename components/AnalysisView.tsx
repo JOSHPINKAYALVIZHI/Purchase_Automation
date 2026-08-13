@@ -166,10 +166,10 @@ export function AnalysisView() {
 
     // 1. Existing DB Suppliers
     suppliersList.forEach((s) => {
-      if (s.companyName) {
+      if (s.companyName && s.companyName.trim()) {
         map.set(s.companyName.toLowerCase().trim(), {
           id: s.id,
-          companyName: s.companyName,
+          companyName: s.companyName.trim(),
           phone: s.phone || '',
           address: s.address || '',
           contactPerson: s.contactPerson || '',
@@ -179,38 +179,76 @@ export function AnalysisView() {
 
     // 2. Add suppliers from approvedLogItems past data
     approvedLogItems.forEach((item) => {
-      const cName = (item.supplierName || 'Vendor').trim();
-      const cKey = cName.toLowerCase();
-      if (!map.has(cKey)) {
-        map.set(cKey, {
-          id: `sup_log_${cKey}`,
-          companyName: cName,
-          phone: item.phone || '',
-          address: item.address || '',
-          contactPerson: item.contactPerson || '',
-        });
+      const cName = (item.supplierName || item.newCompanyName || '').trim();
+      if (cName && cName.toLowerCase() !== 'vendor') {
+        const cKey = cName.toLowerCase();
+        if (!map.has(cKey)) {
+          map.set(cKey, {
+            id: `sup_log_${cKey}`,
+            companyName: cName,
+            phone: item.phone || item.newPhone || '',
+            address: item.address || item.newAddress || '',
+            contactPerson: item.contactPerson || item.newContactPerson || '',
+          });
+        }
+      }
+    });
+
+    // 3. Add suppliers from database logs
+    logs.forEach((item) => {
+      if (item.supplierName && item.supplierName.trim()) {
+        const cName = item.supplierName.trim();
+        if (cName.toLowerCase() !== 'vendor') {
+          const cKey = cName.toLowerCase();
+          if (!map.has(cKey)) {
+            map.set(cKey, {
+              id: `sup_db_${cKey}`,
+              companyName: cName,
+              phone: '',
+              address: '',
+              contactPerson: '',
+            });
+          }
+        }
       }
     });
 
     return Array.from(map.values());
-  }, [suppliersList, approvedLogItems]);
+  }, [suppliersList, approvedLogItems, logs]);
 
   const openAddLogModalForDate = async (targetDateStr?: string) => {
     const dStr = targetDateStr || selectedDateStr || new Date().toISOString().split('T')[0];
     setLogDateInput(dStr);
 
-    let initialSupplierId = 'OTHER';
+    let fetchedSups: any[] = [];
     try {
       const res = await fetch('/api/suppliers');
       const json = await res.json();
       if (json.success && json.data.length > 0) {
+        fetchedSups = json.data;
         setSuppliersList(json.data);
       }
     } catch (e) {}
 
-    if (allVendorsList.length > 0) {
-      initialSupplierId = allVendorsList[0].id;
-    }
+    const tempMap = new Map<string, any>();
+    fetchedSups.forEach((s) => {
+      if (s.companyName) tempMap.set(s.companyName.toLowerCase().trim(), s);
+    });
+    approvedLogItems.forEach((item) => {
+      const cName = (item.supplierName || item.newCompanyName || '').trim();
+      if (cName && cName.toLowerCase() !== 'vendor') {
+        tempMap.set(cName.toLowerCase(), { id: `sup_log_${cName.toLowerCase()}`, companyName: cName });
+      }
+    });
+    logs.forEach((item) => {
+      const cName = (item.supplierName || '').trim();
+      if (cName && cName.toLowerCase() !== 'vendor') {
+        tempMap.set(cName.toLowerCase(), { id: `sup_db_${cName.toLowerCase()}`, companyName: cName });
+      }
+    });
+
+    const availList = Array.from(tempMap.values());
+    const initialSupplierId = availList.length > 0 ? availList[0].id : 'OTHER';
 
     setLogFormItems([createEmptyLogItem(initialSupplierId)]);
     setShowAddLogModal(true);
