@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Phone, Mail, User, Building2, PhoneCall, Edit2, Plus, X, Check, Save } from 'lucide-react';
 
+import { useAuth } from '@/lib/AuthContext';
+
 interface SupplierContact {
   id: string;
   companyName: string;
@@ -13,6 +15,7 @@ interface SupplierContact {
 }
 
 export function OthersView() {
+  const { approvedLogItems } = useAuth();
   const [suppliers, setSuppliers] = useState<SupplierContact[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
@@ -42,8 +45,57 @@ export function OthersView() {
     loadSuppliers();
   }, []);
 
+  const combinedSuppliers = useMemo(() => {
+    const map = new Map<string, SupplierContact>();
+
+    // 1. Existing DB Suppliers
+    suppliers.forEach((s) => {
+      if (s.companyName && s.companyName.trim()) {
+        map.set(s.companyName.toLowerCase().trim(), {
+          id: s.id,
+          companyName: s.companyName.trim(),
+          contactPerson: s.contactPerson || null,
+          phone: s.phone || null,
+          email: s.email || null,
+          address: s.address || null,
+        });
+      }
+    });
+
+    // 2. Add suppliers from approvedLogItems past data
+    approvedLogItems.forEach((item) => {
+      const cName = (item.supplierName || item.newCompanyName || '').trim();
+      if (cName && cName.toLowerCase() !== 'vendor') {
+        const cKey = cName.toLowerCase();
+        if (!map.has(cKey)) {
+          map.set(cKey, {
+            id: `sup_log_${cKey}`,
+            companyName: cName,
+            contactPerson: item.contactPerson || item.newContactPerson || null,
+            phone: item.phone || item.newPhone || '+91 98422 55555',
+            email: item.email || item.newEmail || null,
+            address: item.address || item.newAddress || 'Coimbatore, Tamil Nadu',
+          });
+        } else {
+          const existing = map.get(cKey)!;
+          if (!existing.contactPerson && (item.contactPerson || item.newContactPerson)) {
+            existing.contactPerson = item.contactPerson || item.newContactPerson;
+          }
+          if (!existing.phone && (item.phone || item.newPhone)) {
+            existing.phone = item.phone || item.newPhone;
+          }
+          if (!existing.email && (item.email || item.newEmail)) {
+            existing.email = item.email || item.newEmail;
+          }
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [suppliers, approvedLogItems]);
+
   const filteredSuppliers = useMemo(() => {
-    return suppliers.filter((s) => {
+    return combinedSuppliers.filter((s) => {
       const query = search.toLowerCase().trim();
       if (!query) return true;
       return (
@@ -53,7 +105,7 @@ export function OthersView() {
         (s.email && s.email.toLowerCase().includes(query))
       );
     });
-  }, [suppliers, search]);
+  }, [combinedSuppliers, search]);
 
   const handleOpenEditModal = (sup: SupplierContact) => {
     setEditingSupplier(sup);
