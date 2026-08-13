@@ -160,6 +160,41 @@ export function AnalysisView() {
     loadData();
   }, []);
 
+  // Dynamically combine DB suppliers + past log entry suppliers for Company Vendor dropdown
+  const allVendorsList = useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Existing DB Suppliers
+    suppliersList.forEach((s) => {
+      if (s.companyName) {
+        map.set(s.companyName.toLowerCase().trim(), {
+          id: s.id,
+          companyName: s.companyName,
+          phone: s.phone || '',
+          address: s.address || '',
+          contactPerson: s.contactPerson || '',
+        });
+      }
+    });
+
+    // 2. Add suppliers from approvedLogItems past data
+    approvedLogItems.forEach((item) => {
+      const cName = (item.supplierName || 'Vendor').trim();
+      const cKey = cName.toLowerCase();
+      if (!map.has(cKey)) {
+        map.set(cKey, {
+          id: `sup_log_${cKey}`,
+          companyName: cName,
+          phone: item.phone || '',
+          address: item.address || '',
+          contactPerson: item.contactPerson || '',
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [suppliersList, approvedLogItems]);
+
   const openAddLogModalForDate = async (targetDateStr?: string) => {
     const dStr = targetDateStr || selectedDateStr || new Date().toISOString().split('T')[0];
     setLogDateInput(dStr);
@@ -170,16 +205,19 @@ export function AnalysisView() {
       const json = await res.json();
       if (json.success && json.data.length > 0) {
         setSuppliersList(json.data);
-        initialSupplierId = json.data[0].id;
       }
     } catch (e) {}
+
+    if (allVendorsList.length > 0) {
+      initialSupplierId = allVendorsList[0].id;
+    }
 
     setLogFormItems([createEmptyLogItem(initialSupplierId)]);
     setShowAddLogModal(true);
   };
 
   const handleAddAnotherItem = () => {
-    const defaultSupp = suppliersList.length > 0 ? suppliersList[0].id : 'OTHER';
+    const defaultSupp = allVendorsList.length > 0 ? allVendorsList[0].id : 'OTHER';
     setLogFormItems((prev) => [...prev, createEmptyLogItem(defaultSupp)]);
   };
 
@@ -213,7 +251,7 @@ export function AnalysisView() {
 
       for (const item of logFormItems) {
         const finalCategory = item.category === 'CUSTOM' ? item.customCategory.trim() : item.category;
-        const supplierObj = suppliersList.find((s) => s.id === item.supplierId);
+        const supplierObj = allVendorsList.find((s) => s.id === item.supplierId);
 
         const logData = {
           date: logDateInput,
@@ -1036,9 +1074,9 @@ export function AnalysisView() {
                           onChange={(e) => handleUpdateItemField(item.id, 'supplierId', e.target.value)}
                           className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 font-bold text-slate-900 focus:outline-none focus:border-emerald-600 text-xs cursor-pointer"
                         >
-                          {suppliersList.map((s) => (
+                          {allVendorsList.map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.companyName} ({s.phone || 'Vendor'})
+                              {s.companyName} {s.phone ? `(${s.phone})` : ''}
                             </option>
                           ))}
                           <option value="OTHER">+ Add New Company / Vendor...</option>
