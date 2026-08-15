@@ -135,12 +135,13 @@ export function AnalysisView() {
                 }
                 const monthKey = dateIsoStr.substring(0, 7);
 
+                const prod = sp.product || {};
                 items.push({
                   id: sp.id,
                   supplierName: s.companyName,
-                  category: p.category || 'Solar Equipment',
-                  productName: p.name || 'Solar Item',
-                  brand: p.brand || 'Standard Make',
+                  category: prod.category || 'Solar Equipment',
+                  productName: prod.name || 'Solar Item',
+                  brand: prod.brand || 'Standard Make',
                   invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
                   quantity: qty,
                   basePrice: unitBase,
