@@ -43,8 +43,9 @@ export function OthersView() {
   const [cloudItems, setCloudItems] = useState<any[]>([]);
 
   useEffect(() => {
-    async function loadSuppliers() {
+    async function loadSuppliers(isInitial = false) {
       try {
+        if (isInitial) setLoading(true);
         const [res, cloudRes] = await Promise.all([
           fetch('/api/suppliers').catch(() => null),
           fetch('/api/cloud-sync').catch(() => null),
@@ -64,13 +65,15 @@ export function OthersView() {
       } catch (err) {
         console.error('Failed to load supplier contacts:', err);
       } finally {
-        setLoading(false);
+        if (isInitial) setLoading(false);
       }
     }
-    loadSuppliers();
+    loadSuppliers(true);
     const interval = setInterval(() => {
-      loadSuppliers();
-    }, 3000);
+      if (document.visibilityState === 'visible') {
+        loadSuppliers(false);
+      }
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 

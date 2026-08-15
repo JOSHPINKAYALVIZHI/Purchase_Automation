@@ -110,10 +110,10 @@ export function SimpleProductComparer() {
 
   const [cloudItems, setCloudItems] = useState<any[]>([]);
 
-  // Reusable loadProducts function
-  const loadProducts = async () => {
+  // Silent loadProducts function for 60fps fast performance
+  const loadProducts = async (isInitial = false) => {
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const [res, cloudRes] = await Promise.all([
         fetch('/api/products').catch(() => null),
         fetch('/api/cloud-sync').catch(() => null),
@@ -135,19 +135,21 @@ export function SimpleProductComparer() {
     } catch (err) {
       console.error('Error fetching products:', err);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadProducts();
+    loadProducts(true);
     const interval = setInterval(() => {
-      loadProducts();
-    }, 3000);
+      if (document.visibilityState === 'visible') {
+        loadProducts(false);
+      }
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Combine DB products + past log entry products dynamically
+  // Combine DB products + past log entry products & cloud sync dynamically
   const combinedProducts = useMemo(() => {
     const map = new Map<string, any>();
 
@@ -163,9 +165,31 @@ export function SimpleProductComparer() {
       const pName = (item.productName || 'Solar Item').trim();
       const pKey = pName.toLowerCase();
 
+      const unitBase = parseFloat(item.basePrice) || 0;
+      const gstPct = parseFloat(item.gstPercentage) || 18;
+      const subBase = item.subtotalBasePrice || unitBase * (parseFloat(item.quantity) || 1);
+      const eff = item.effectivePrice || subBase * (1 + gstPct / 100);
+      const cName = (item.supplierName || item.companyName || item.newCompanyName || 'Solar Vendor').trim();
+
+      const newQuote = {
+        id: item.id || `sp_cloud_${Math.random()}`,
+        basePrice: unitBase,
+        gstPercentage: gstPct,
+        effectivePrice: eff,
+        totalAmount: eff,
+        invoiceNo: item.invoiceNo || 'FSCH/00139/25-26',
+        supplier: {
+          id: `sup_${cName.toLowerCase().replace(/\s+/g, '_')}`,
+          companyName: cName,
+          phone: item.phone || item.newPhone || '',
+          address: item.address || item.newAddress || '',
+          contactPerson: item.contactPerson || item.newContactPerson || '',
+        },
+      };
+
       if (!map.has(pKey)) {
         map.set(pKey, {
-          id: `prod_log_${Math.abs(pKey.split('').reduce((acc: number, char: string) => (acc << 5) - acc + char.charCodeAt(0), 0))}`,
+          id: `prod_cloud_${Math.abs(pKey.split('').reduce((acc: number, char: string) => (acc << 5) - acc + char.charCodeAt(0), 0))}`,
           name: pName,
           category: normalizeCategory(item.category || 'Solar Equipment'),
           brand: item.brand || 'Standard Make',
@@ -173,8 +197,18 @@ export function SimpleProductComparer() {
           hsn: item.hsn || '8541',
           unit: 'Pcs',
           inventory: [{ available: 20 }],
-          supplierProducts: [],
+          supplierProducts: [newQuote],
         });
+      } else {
+        const existing = map.get(pKey);
+        if (existing && Array.isArray(existing.supplierProducts)) {
+          const exists = existing.supplierProducts.some(
+            (sp: any) => sp.supplier?.companyName?.toLowerCase() === cName.toLowerCase()
+          );
+          if (!exists) {
+            existing.supplierProducts.push(newQuote);
+          }
+        }
       }
     });
 

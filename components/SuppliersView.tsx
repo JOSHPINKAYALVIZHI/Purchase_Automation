@@ -32,9 +32,9 @@ export function SuppliersView() {
   const [cloudItems, setCloudItems] = useState<any[]>([]);
 
   useEffect(() => {
-    async function loadSuppliersAndProducts() {
+    async function loadSuppliersAndProducts(isInitial = false) {
       try {
-        setLoading(true);
+        if (isInitial) setLoading(true);
         const [supRes, prodRes, cloudRes] = await Promise.all([
           fetch('/api/suppliers').catch(() => null),
           fetch('/api/products').catch(() => null),
@@ -58,13 +58,15 @@ export function SuppliersView() {
       } catch (err) {
         console.error('Error fetching suppliers:', err);
       } finally {
-        setLoading(false);
+        if (isInitial) setLoading(false);
       }
     }
-    loadSuppliersAndProducts();
+    loadSuppliersAndProducts(true);
     const interval = setInterval(() => {
-      loadSuppliersAndProducts();
-    }, 3000);
+      if (document.visibilityState === 'visible') {
+        loadSuppliersAndProducts(false);
+      }
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 

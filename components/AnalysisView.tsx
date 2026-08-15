@@ -106,113 +106,115 @@ export function AnalysisView() {
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-    try {
-      setLoading(true);
-      const [res, cloudRes] = await Promise.all([
-        fetch('/api/products').catch(() => null),
-        fetch('/api/cloud-sync').catch(() => null),
-      ]);
+    const loadData = async (isInitial = false) => {
+      try {
+        if (isInitial) setLoading(true);
+        const [res, cloudRes] = await Promise.all([
+          fetch('/api/products').catch(() => null),
+          fetch('/api/cloud-sync').catch(() => null),
+        ]);
 
-      const items: any[] = [];
+        const items: any[] = [];
 
-      if (res && res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          json.data.forEach((p: any) => {
-            if (p.supplierProducts && Array.isArray(p.supplierProducts)) {
-              p.supplierProducts.forEach((sp: any) => {
-                const s = sp.supplier || {};
-                const qty = sp.minimumOrderQuantity || 1;
-                const unitBase = sp.basePrice || 0;
-                const subtotalBase = unitBase * qty;
-                const gstRate = sp.gstPercentage || 18;
-                const gstAmt = (subtotalBase * gstRate) / 100;
-                const effective = sp.effectivePrice || subtotalBase + gstAmt;
+        if (res && res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            json.data.forEach((p: any) => {
+              if (p.supplierProducts && Array.isArray(p.supplierProducts)) {
+                p.supplierProducts.forEach((sp: any) => {
+                  const s = sp.supplier || {};
+                  const qty = sp.minimumOrderQuantity || 1;
+                  const unitBase = sp.basePrice || 0;
+                  const subtotalBase = unitBase * qty;
+                  const gstRate = sp.gstPercentage || 18;
+                  const gstAmt = (subtotalBase * gstRate) / 100;
+                  const effective = sp.effectivePrice || subtotalBase + gstAmt;
 
-                let dateIsoStr = new Date().toISOString().split('T')[0];
-                if (sp.quotationDate) {
-                  const d = new Date(sp.quotationDate);
-                  if (!isNaN(d.getTime())) dateIsoStr = d.toISOString().split('T')[0];
-                } else if (sp.updatedAt) {
-                  const d = new Date(sp.updatedAt);
-                  if (!isNaN(d.getTime())) dateIsoStr = d.toISOString().split('T')[0];
-                }
-                const monthKey = dateIsoStr.substring(0, 7);
-                const prod = sp.product || {};
+                  let dateIsoStr = new Date().toISOString().split('T')[0];
+                  if (sp.quotationDate) {
+                    const d = new Date(sp.quotationDate);
+                    if (!isNaN(d.getTime())) dateIsoStr = d.toISOString().split('T')[0];
+                  } else if (sp.updatedAt) {
+                    const d = new Date(sp.updatedAt);
+                    if (!isNaN(d.getTime())) dateIsoStr = d.toISOString().split('T')[0];
+                  }
+                  const monthKey = dateIsoStr.substring(0, 7);
+                  const prod = sp.product || {};
 
-                items.push({
-                  id: sp.id || `sp_${p.id}_${s.id}`,
-                  supplierName: s.companyName || 'Solar Vendor',
-                  category: prod.category || p.category || 'Solar Equipment',
-                  productName: prod.name || p.name || 'Solar Item',
-                  brand: prod.brand || p.brand || 'Standard Make',
-                  invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
-                  quantity: qty,
-                  basePrice: unitBase,
-                  subtotalBasePrice: subtotalBase,
-                  gstPercentage: gstRate,
-                  gstAmount: gstAmt,
-                  effectivePrice: effective,
-                  totalAmount: sp.totalAmount || effective,
-                  dateStr: dateIsoStr,
-                  monthStr: monthKey,
+                  items.push({
+                    id: sp.id || `sp_${p.id}_${s.id}`,
+                    supplierName: s.companyName || 'Solar Vendor',
+                    category: prod.category || p.category || 'Solar Equipment',
+                    productName: prod.name || p.name || 'Solar Item',
+                    brand: prod.brand || p.brand || 'Standard Make',
+                    invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
+                    quantity: qty,
+                    basePrice: unitBase,
+                    subtotalBasePrice: subtotalBase,
+                    gstPercentage: gstRate,
+                    gstAmount: gstAmt,
+                    effectivePrice: effective,
+                    totalAmount: sp.totalAmount || effective,
+                    dateStr: dateIsoStr,
+                    monthStr: monthKey,
+                  });
                 });
-              });
-            }
-          });
-        }
-      }
-
-      if (cloudRes && cloudRes.ok) {
-        const cloudJson = await cloudRes.json();
-        if (cloudJson.success && Array.isArray(cloudJson.logs)) {
-          cloudJson.logs.forEach((item: any) => {
-            const qty = item.quantity || 1;
-            const unitBase = item.basePrice || 0;
-            const subtotalBase = item.subtotalBasePrice || unitBase * qty;
-            const gstRate = item.gstPercentage || 18;
-            const gstAmt = item.gstAmount !== undefined ? item.gstAmount : (subtotalBase * gstRate) / 100;
-            const effective = item.effectivePrice || subtotalBase + gstAmt;
-
-            let dateIsoStr = item.date || new Date().toISOString().split('T')[0];
-            const monthKey = dateIsoStr.substring(0, 7);
-
-            items.push({
-              id: item.id || `cloud_log_${Math.random()}`,
-              supplierName: item.supplierName || item.newCompanyName || 'Vendor Company',
-              category: item.category || 'Solar Equipment',
-              productName: item.productName || 'Solar Item',
-              brand: item.brand || 'Standard Solar',
-              invoiceNo: item.invoiceNo || 'FSCH/00139/25-26',
-              quantity: qty,
-              basePrice: unitBase,
-              subtotalBasePrice: subtotalBase,
-              gstPercentage: gstRate,
-              gstAmount: gstAmt,
-              effectivePrice: effective,
-              totalAmount: effective,
-              dateStr: dateIsoStr,
-              monthStr: monthKey,
+              }
             });
-          });
+          }
         }
-      }
 
-      // Deduplicate items by ID
-      const map = new Map<string, any>();
-      items.forEach((it) => map.set(it.id, it));
-      setLogs(Array.from(map.values()));
-    } catch (err) {
-      console.error('Error loading analysis data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-    loadData();
+        if (cloudRes && cloudRes.ok) {
+          const cloudJson = await cloudRes.json();
+          if (cloudJson.success && Array.isArray(cloudJson.logs)) {
+            cloudJson.logs.forEach((item: any) => {
+              const qty = item.quantity || 1;
+              const unitBase = item.basePrice || 0;
+              const subtotalBase = item.subtotalBasePrice || unitBase * qty;
+              const gstRate = item.gstPercentage || 18;
+              const gstAmt = item.gstAmount !== undefined ? item.gstAmount : (subtotalBase * gstRate) / 100;
+              const effective = item.effectivePrice || subtotalBase + gstAmt;
+
+              let dateIsoStr = item.date || new Date().toISOString().split('T')[0];
+              const monthKey = dateIsoStr.substring(0, 7);
+
+              items.push({
+                id: item.id || `cloud_log_${Math.random()}`,
+                supplierName: item.supplierName || item.newCompanyName || 'Vendor Company',
+                category: item.category || 'Solar Equipment',
+                productName: item.productName || 'Solar Item',
+                brand: item.brand || 'Standard Solar',
+                invoiceNo: item.invoiceNo || 'FSCH/00139/25-26',
+                quantity: qty,
+                basePrice: unitBase,
+                subtotalBasePrice: subtotalBase,
+                gstPercentage: gstRate,
+                gstAmount: gstAmt,
+                effectivePrice: effective,
+                totalAmount: effective,
+                dateStr: dateIsoStr,
+                monthStr: monthKey,
+              });
+            });
+          }
+        }
+
+        // Deduplicate items by ID
+        const map = new Map<string, any>();
+        items.forEach((it) => map.set(it.id, it));
+        setLogs(Array.from(map.values()));
+      } catch (err) {
+        console.error('Error loading analysis data:', err);
+      } finally {
+        if (isInitial) setLoading(false);
+      }
+    };
+    loadData(true);
     const interval = setInterval(() => {
-      loadData();
-    }, 3000);
+      if (document.visibilityState === 'visible') {
+        loadData(false);
+      }
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
