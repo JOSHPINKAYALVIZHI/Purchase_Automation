@@ -349,6 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         purchaseLogStatuses,
         toggleLogStatus,
         addDirectLogItem,
+        addDirectLogItems,
         clearAllAppData,
       }}
     >
