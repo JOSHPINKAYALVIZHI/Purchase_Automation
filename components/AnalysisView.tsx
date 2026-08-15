@@ -53,7 +53,7 @@ interface LogFormItem {
 }
 
 export function AnalysisView() {
-  const { approvedLogItems, addDirectLogItem } = useAuth();
+  const { approvedLogItems, addDirectLogItem, addDirectLogItems } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [deletedLogIds, setDeletedLogIds] = useState<string[]>([]);
@@ -298,6 +298,8 @@ export function AnalysisView() {
     try {
       setSubmittingLog(true);
 
+      const allLogDataArray: any[] = [];
+
       for (const item of logFormItems) {
         const finalCategory = item.category === 'CUSTOM' ? item.customCategory.trim() : item.category;
         const supplierObj = allVendorsList.find((s) => s.id === item.supplierId);
@@ -335,10 +337,9 @@ export function AnalysisView() {
           newContactPerson: item.newContactPerson.trim(),
         };
 
-        // Add to AuthContext state & localStorage
-        addDirectLogItem(logData);
+        allLogDataArray.push(logData);
 
-        // Also submit to backend database
+        // Submit to backend database
         try {
           await fetch('/api/products', {
             method: 'POST',
@@ -354,6 +355,9 @@ export function AnalysisView() {
           });
         } catch (err) {}
       }
+
+      // Batch save all products for this purchase log date
+      addDirectLogItems(allLogDataArray);
 
       setShowAddLogModal(false);
       setShowDateModal(false);

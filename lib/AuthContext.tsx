@@ -40,6 +40,7 @@ interface AuthContextType {
   purchaseLogStatuses: Record<string, 'SENT' | 'RECEIVED'>;
   toggleLogStatus: (logId: string) => void;
   addDirectLogItem: (item: any) => void;
+  addDirectLogItems: (items: any[]) => void;
   clearAllAppData: () => void;
 }
 
@@ -254,42 +255,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('jesuans_log_statuses', JSON.stringify(updated));
   };
 
+  const addDirectLogItems = (itemsArray: any[]) => {
+    if (!Array.isArray(itemsArray) || itemsArray.length === 0) return [];
+
+    const newEntries = itemsArray.map((newItem) => {
+      const qty = Number(newItem.quantity) || 1;
+      const unitBasePrice = Number(newItem.basePrice) || 0;
+      const subtotalBasePrice = newItem.subtotalBasePrice !== undefined ? Number(newItem.subtotalBasePrice) : unitBasePrice * qty;
+      const gstPercentage = Number(newItem.gstPercentage) || 18;
+      const gstAmount = newItem.gstAmount !== undefined ? Number(newItem.gstAmount) : (subtotalBasePrice * gstPercentage) / 100;
+      const effectivePrice = newItem.effectivePrice !== undefined ? Number(newItem.effectivePrice) : subtotalBasePrice + gstAmount;
+
+      return {
+        id: newItem.id || `LOG_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
+        supplierName: newItem.supplierName || newItem.newCompanyName || 'Vendor',
+        gstNumber: newItem.newGstNumber || '33AAACG123456789',
+        phone: newItem.phone || newItem.newPhone || '',
+        address: newItem.address || newItem.newAddress || 'Coimbatore',
+        productName: newItem.productName || 'Solar Material',
+        category: newItem.category || 'Solar Equipment',
+        specification: newItem.kwRating
+          ? `${newItem.kwRating} • ${newItem.specification || 'Standard Spec'}`
+          : newItem.specification || 'Standard Spec',
+        brand: newItem.brand || 'Standard Make',
+        hsn: newItem.hsn || '8541',
+        quantity: qty,
+        basePrice: unitBasePrice,
+        subtotalBasePrice,
+        gstPercentage,
+        gstAmount,
+        effectivePrice,
+        invoiceNo: newItem.invoiceNo || `FSCH/${Math.floor(10000 + Math.random() * 90000)}/25-26`,
+        discount: newItem.discount || '—',
+        date: newItem.date || new Date().toISOString().split('T')[0],
+      };
+    });
+
+    setApprovedLogItems((prev) => {
+      const updated = [...newEntries, ...prev];
+      localStorage.setItem('jesuans_approved_log_items', JSON.stringify(updated));
+      return updated;
+    });
+
+    setPurchaseLogStatuses((prev) => {
+      const updated = { ...prev };
+      newEntries.forEach((e) => {
+        updated[e.id] = 'SENT';
+      });
+      localStorage.setItem('jesuans_log_statuses', JSON.stringify(updated));
+      return updated;
+    });
+
+    return newEntries;
+  };
+
   const addDirectLogItem = (newItem: any) => {
-    const basePrice = Number(newItem.basePrice) || 0;
-    const gstPercentage = Number(newItem.gstPercentage) || 18;
-    const effectivePrice = basePrice * (1 + gstPercentage / 100);
-
-    const logEntry = {
-      id: `LOG_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-      supplierName: newItem.supplierName || newItem.newCompanyName || 'Vendor',
-      gstNumber: newItem.newGstNumber || '33AAACG123456789',
-      phone: newItem.newPhone || '',
-      address: newItem.newAddress || 'Coimbatore',
-      productName: newItem.productName || 'Solar Material',
-      category: newItem.category || 'Solar Equipment',
-      specification: newItem.kwRating
-        ? `${newItem.kwRating} • ${newItem.specification || 'Standard Spec'}`
-        : newItem.specification || 'Standard Spec',
-      brand: newItem.brand || 'Standard Make',
-      hsn: newItem.hsn || '8541',
-      basePrice,
-      gstPercentage,
-      effectivePrice,
-      invoiceNo: newItem.invoiceNo || `FSCH/${Math.floor(10000 + Math.random() * 90000)}/25-26`,
-      discount: newItem.discount || '—',
-      date: newItem.date || new Date().toISOString().split('T')[0],
-    };
-
-    const updatedApprovedItems = [logEntry, ...approvedLogItems];
-    setApprovedLogItems(updatedApprovedItems);
-    localStorage.setItem('jesuans_approved_log_items', JSON.stringify(updatedApprovedItems));
-
-    const updatedStatuses: Record<string, 'SENT' | 'RECEIVED'> = {
-      ...purchaseLogStatuses,
-      [logEntry.id]: 'SENT',
-    };
-    setPurchaseLogStatuses(updatedStatuses);
-    localStorage.setItem('jesuans_log_statuses', JSON.stringify(updatedStatuses));
+    return addDirectLogItems([newItem]);
   };
 
   const clearAllAppData = async () => {
