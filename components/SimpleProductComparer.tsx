@@ -108,14 +108,29 @@ export function SimpleProductComparer() {
   const [newEmail, setNewEmail] = useState<string>('');
   const [newContactPerson, setNewContactPerson] = useState<string>('');
 
+  const [cloudItems, setCloudItems] = useState<any[]>([]);
+
   // Reusable loadProducts function
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/products');
-      const json = await res.json();
-      if (json.success && json.data.length > 0) {
-        setProducts(json.data);
+      const [res, cloudRes] = await Promise.all([
+        fetch('/api/products').catch(() => null),
+        fetch('/api/cloud-sync').catch(() => null),
+      ]);
+
+      if (res && res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setProducts(json.data);
+        }
+      }
+
+      if (cloudRes && cloudRes.ok) {
+        const cloudJson = await cloudRes.json();
+        if (cloudJson.success) {
+          setCloudItems(cloudJson.logs || []);
+        }
       }
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -143,8 +158,8 @@ export function SimpleProductComparer() {
       }
     });
 
-    // 2. Combine Products from approvedLogItems past data
-    approvedLogItems.forEach((item) => {
+    // 2. Combine Products from approvedLogItems past data & cloud sync
+    [...approvedLogItems, ...cloudItems].forEach((item) => {
       const pName = (item.productName || 'Solar Item').trim();
       const pKey = pName.toLowerCase();
 
@@ -164,7 +179,7 @@ export function SimpleProductComparer() {
     });
 
     return Array.from(map.values());
-  }, [products, approvedLogItems]);
+  }, [products, approvedLogItems, cloudItems]);
 
   // Dynamically combine DB suppliers + past log entry vendors + offers + products for Add Product modal company dropdown
   const combinedSuppliersList = useMemo(() => {
@@ -367,7 +382,7 @@ export function SimpleProductComparer() {
         const compAddress = selectedSupplierId === 'OTHER' ? newAddress.trim() : (selectedSup?.address || '');
         const compContact = selectedSupplierId === 'OTHER' ? newContactPerson.trim() : (selectedSup?.contactPerson || '');
 
-        addDirectLogItem({
+        const newLogPayload = {
           date: new Date().toISOString().split('T')[0],
           productName: formProductName.trim(),
           category: finalCategory.trim() || 'Solar Equipment',
@@ -376,6 +391,7 @@ export function SimpleProductComparer() {
           hsn: formHsn.trim() || '8541',
           basePrice: parseFloat(formBasePrice) || 0,
           gstPercentage: parseFloat(formGstPercentage) || 18,
+          effectivePrice: (parseFloat(formBasePrice) || 0) * (1 + (parseFloat(formGstPercentage) || 18) / 100),
           invoiceNo: formInvoiceNo.trim() || `FSCH/${Math.floor(10000 + Math.random() * 90000)}/25-26`,
           discount: formDiscount.trim() || '—',
           supplierName: compName,
@@ -386,7 +402,26 @@ export function SimpleProductComparer() {
           newPhone: compPhone,
           newAddress: compAddress,
           newContactPerson: compContact,
-        });
+        };
+
+        addDirectLogItem(newLogPayload);
+
+        try {
+          await fetch('/api/cloud-sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              newLogs: [newLogPayload],
+              newSuppliers: [{
+                id: `sup_${compName.toLowerCase().replace(/\s+/g, '_')}`,
+                companyName: compName,
+                phone: compPhone,
+                address: compAddress,
+                contactPerson: compContact,
+              }],
+            }),
+          });
+        } catch (e) {}
 
         setAddProductSuccessMsg('✅ Product & Quote added successfully!');
         setTimeout(() => setAddProductSuccessMsg(''), 4000);

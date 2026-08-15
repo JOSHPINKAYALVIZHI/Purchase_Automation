@@ -106,17 +106,23 @@ export function AnalysisView() {
   }, []);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/suppliers');
-        const json = await res.json();
-        if (json.success) {
-          const items: any[] = [];
+    const loadData = async () => {
+    try {
+      setLoading(true);
+      const [res, cloudRes] = await Promise.all([
+        fetch('/api/products').catch(() => null),
+        fetch('/api/cloud-sync').catch(() => null),
+      ]);
 
-          json.data.forEach((s: any) => {
-            if (s.products) {
-              s.products.forEach((sp: any) => {
+      const items: any[] = [];
+
+      if (res && res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          json.data.forEach((p: any) => {
+            if (p.supplierProducts && Array.isArray(p.supplierProducts)) {
+              p.supplierProducts.forEach((sp: any) => {
+                const s = sp.supplier || {};
                 const qty = sp.minimumOrderQuantity || 1;
                 const unitBase = sp.basePrice || 0;
                 const subtotalBase = unitBase * qty;
@@ -125,23 +131,22 @@ export function AnalysisView() {
                 const effective = sp.effectivePrice || subtotalBase + gstAmt;
 
                 let dateIsoStr = new Date().toISOString().split('T')[0];
-                if (sp.updatedAt) {
+                if (sp.quotationDate) {
+                  const d = new Date(sp.quotationDate);
+                  if (!isNaN(d.getTime())) dateIsoStr = d.toISOString().split('T')[0];
+                } else if (sp.updatedAt) {
                   const d = new Date(sp.updatedAt);
-                  if (!isNaN(d.getTime())) {
-                    dateIsoStr = d.toISOString().split('T')[0];
-                  }
-                } else if (sp.quotationDate) {
-                  dateIsoStr = sp.quotationDate;
+                  if (!isNaN(d.getTime())) dateIsoStr = d.toISOString().split('T')[0];
                 }
                 const monthKey = dateIsoStr.substring(0, 7);
-
                 const prod = sp.product || {};
+
                 items.push({
-                  id: sp.id,
-                  supplierName: s.companyName,
-                  category: prod.category || 'Solar Equipment',
-                  productName: prod.name || 'Solar Item',
-                  brand: prod.brand || 'Standard Make',
+                  id: sp.id || `sp_${p.id}_${s.id}`,
+                  supplierName: s.companyName || 'Solar Vendor',
+                  category: prod.category || p.category || 'Solar Equipment',
+                  productName: prod.name || p.name || 'Solar Item',
+                  brand: prod.brand || p.brand || 'Standard Make',
                   invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
                   quantity: qty,
                   basePrice: unitBase,
@@ -156,14 +161,54 @@ export function AnalysisView() {
               });
             }
           });
-          setLogs(items);
         }
-      } catch (err) {
-        console.error('Error loading analysis data:', err);
-      } finally {
-        setLoading(false);
       }
+
+      if (cloudRes && cloudRes.ok) {
+        const cloudJson = await cloudRes.json();
+        if (cloudJson.success && Array.isArray(cloudJson.logs)) {
+          cloudJson.logs.forEach((item: any) => {
+            const qty = item.quantity || 1;
+            const unitBase = item.basePrice || 0;
+            const subtotalBase = item.subtotalBasePrice || unitBase * qty;
+            const gstRate = item.gstPercentage || 18;
+            const gstAmt = item.gstAmount !== undefined ? item.gstAmount : (subtotalBase * gstRate) / 100;
+            const effective = item.effectivePrice || subtotalBase + gstAmt;
+
+            let dateIsoStr = item.date || new Date().toISOString().split('T')[0];
+            const monthKey = dateIsoStr.substring(0, 7);
+
+            items.push({
+              id: item.id || `cloud_log_${Math.random()}`,
+              supplierName: item.supplierName || item.newCompanyName || 'Vendor Company',
+              category: item.category || 'Solar Equipment',
+              productName: item.productName || 'Solar Item',
+              brand: item.brand || 'Standard Solar',
+              invoiceNo: item.invoiceNo || 'FSCH/00139/25-26',
+              quantity: qty,
+              basePrice: unitBase,
+              subtotalBasePrice: subtotalBase,
+              gstPercentage: gstRate,
+              gstAmount: gstAmt,
+              effectivePrice: effective,
+              totalAmount: effective,
+              dateStr: dateIsoStr,
+              monthStr: monthKey,
+            });
+          });
+        }
+      }
+
+      // Deduplicate items by ID
+      const map = new Map<string, any>();
+      items.forEach((it) => map.set(it.id, it));
+      setLogs(Array.from(map.values()));
+    } catch (err) {
+      console.error('Error loading analysis data:', err);
+    } finally {
+      setLoading(false);
     }
+  };
     loadData();
     const interval = setInterval(() => {
       loadData();
@@ -356,8 +401,25 @@ export function AnalysisView() {
         } catch (err) {}
       }
 
-      // Batch save all products for this purchase log date
+      // Batch save all products locally and to global multi-device cloud storage
       addDirectLogItems(allLogDataArray);
+
+      try {
+        await fetch('/api/cloud-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            newLogs: allLogDataArray,
+            newSuppliers: allLogDataArray.map((l) => ({
+              id: `sup_${l.supplierName.toLowerCase().replace(/\s+/g, '_')}`,
+              companyName: l.supplierName,
+              phone: l.phone,
+              address: l.address,
+              contactPerson: l.newContactPerson,
+            })),
+          }),
+        });
+      } catch (err) {}
 
       setShowAddLogModal(false);
       setShowDateModal(false);

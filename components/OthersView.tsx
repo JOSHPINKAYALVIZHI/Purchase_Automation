@@ -40,13 +40,26 @@ export function OthersView() {
     } catch (e) {}
   }, []);
 
+  const [cloudItems, setCloudItems] = useState<any[]>([]);
+
   useEffect(() => {
     async function loadSuppliers() {
       try {
-        const res = await fetch('/api/suppliers');
-        const json = await res.json();
-        if (json.success) {
-          setSuppliers(json.data || []);
+        const [res, cloudRes] = await Promise.all([
+          fetch('/api/suppliers').catch(() => null),
+          fetch('/api/cloud-sync').catch(() => null),
+        ]);
+
+        if (res && res.ok) {
+          const json = await res.json();
+          if (json.success) setSuppliers(json.data || []);
+        }
+
+        if (cloudRes && cloudRes.ok) {
+          const cloudJson = await cloudRes.json();
+          if (cloudJson.success) {
+            setCloudItems([...(cloudJson.logs || []), ...(cloudJson.suppliers || [])]);
+          }
         }
       } catch (err) {
         console.error('Failed to load supplier contacts:', err);
@@ -78,14 +91,14 @@ export function OthersView() {
       }
     });
 
-    // 2. Add suppliers from approvedLogItems past data
-    approvedLogItems.forEach((item) => {
-      const cName = (item.supplierName || item.newCompanyName || '').trim();
+    // 2. Add suppliers from approvedLogItems & cloud sync
+    [...approvedLogItems, ...cloudItems].forEach((item) => {
+      const cName = (item.supplierName || item.companyName || item.newCompanyName || '').trim();
       if (cName && cName.toLowerCase() !== 'vendor') {
         const cKey = cName.toLowerCase();
         if (!map.has(cKey)) {
           map.set(cKey, {
-            id: `sup_log_${cKey}`,
+            id: item.id || `sup_log_${cKey}`,
             companyName: cName,
             contactPerson: item.contactPerson || item.newContactPerson || null,
             phone: item.phone || item.newPhone || '+91 98422 55555',

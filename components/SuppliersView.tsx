@@ -29,22 +29,31 @@ export function SuppliersView() {
   // Selected Supplier Modal State
   const [selectedSupplier, setSelectedSupplier] = useState<any | null>(null);
 
+  const [cloudItems, setCloudItems] = useState<any[]>([]);
+
   useEffect(() => {
     async function loadSuppliersAndProducts() {
       try {
         setLoading(true);
-        const [supRes, prodRes] = await Promise.all([
-          fetch('/api/suppliers'),
-          fetch('/api/products'),
+        const [supRes, prodRes, cloudRes] = await Promise.all([
+          fetch('/api/suppliers').catch(() => null),
+          fetch('/api/products').catch(() => null),
+          fetch('/api/cloud-sync').catch(() => null),
         ]);
-        const supJson = await supRes.json();
-        const prodJson = await prodRes.json();
 
-        if (supJson.success) {
-          setSuppliers(supJson.data || []);
+        if (supRes && supRes.ok) {
+          const supJson = await supRes.json();
+          if (supJson.success) setSuppliers(supJson.data || []);
         }
-        if (prodJson.success) {
-          setDbProducts(prodJson.data || []);
+        if (prodRes && prodRes.ok) {
+          const prodJson = await prodRes.json();
+          if (prodJson.success) setDbProducts(prodJson.data || []);
+        }
+        if (cloudRes && cloudRes.ok) {
+          const cloudJson = await cloudRes.json();
+          if (cloudJson.success) {
+            setCloudItems([...(cloudJson.logs || []), ...(cloudJson.suppliers || [])]);
+          }
         }
       } catch (err) {
         console.error('Error fetching suppliers:', err);
@@ -69,9 +78,9 @@ export function SuppliersView() {
       }
     });
 
-    // 2. Combine companies and product items from approvedLogItems past data
-    approvedLogItems.forEach((item) => {
-      const cName = (item.supplierName || item.newCompanyName || '').trim();
+    // 2. Combine companies and product items from approvedLogItems & cloud sync
+    [...approvedLogItems, ...cloudItems].forEach((item) => {
+      const cName = (item.supplierName || item.companyName || item.newCompanyName || '').trim();
       if (!cName || cName.toLowerCase() === 'vendor') return;
 
       const cKey = cName.toLowerCase();
