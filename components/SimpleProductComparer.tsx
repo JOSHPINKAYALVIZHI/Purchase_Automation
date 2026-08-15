@@ -126,6 +126,10 @@ export function SimpleProductComparer() {
 
   useEffect(() => {
     loadProducts();
+    const interval = setInterval(() => {
+      loadProducts();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Combine DB products + past log entry products dynamically

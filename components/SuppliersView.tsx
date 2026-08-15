@@ -53,6 +53,10 @@ export function SuppliersView() {
       }
     }
     loadSuppliersAndProducts();
+    const interval = setInterval(() => {
+      loadSuppliersAndProducts();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const combinedSuppliers = useMemo(() => {

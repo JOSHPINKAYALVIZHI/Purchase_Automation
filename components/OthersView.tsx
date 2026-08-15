@@ -55,6 +55,10 @@ export function OthersView() {
       }
     }
     loadSuppliers();
+    const interval = setInterval(() => {
+      loadSuppliers();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const combinedSuppliers = useMemo(() => {

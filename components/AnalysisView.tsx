@@ -40,6 +40,7 @@ interface LogFormItem {
   specification: string;
   brand: string;
   hsn: string;
+  quantity: string;
   basePrice: string;
   gstPercentage: string;
   discount: string;
@@ -80,6 +81,7 @@ export function AnalysisView() {
     specification: '',
     brand: '',
     hsn: '8541',
+    quantity: '1',
     basePrice: '',
     gstPercentage: '18',
     discount: '',
@@ -115,10 +117,12 @@ export function AnalysisView() {
           json.data.forEach((s: any) => {
             if (s.products) {
               s.products.forEach((sp: any) => {
-                const base = sp.basePrice || 0;
+                const qty = sp.minimumOrderQuantity || 1;
+                const unitBase = sp.basePrice || 0;
+                const subtotalBase = unitBase * qty;
                 const gstRate = sp.gstPercentage || 18;
-                const gstAmt = (base * gstRate) / 100;
-                const effective = sp.effectivePrice || base + gstAmt;
+                const gstAmt = (subtotalBase * gstRate) / 100;
+                const effective = sp.effectivePrice || subtotalBase + gstAmt;
 
                 let dateIsoStr = new Date().toISOString().split('T')[0];
                 if (sp.updatedAt) {
@@ -134,15 +138,17 @@ export function AnalysisView() {
                 items.push({
                   id: sp.id,
                   supplierName: s.companyName,
-                  category: sp.product?.category || 'Solar Equipment',
-                  productName: sp.product?.name || 'Solar Item',
-                  brand: sp.product?.brand || 'Standard Make',
+                  category: p.category || 'Solar Equipment',
+                  productName: p.name || 'Solar Item',
+                  brand: p.brand || 'Standard Make',
                   invoiceNo: sp.invoiceNo || 'FSCH/00139/25-26',
-                  basePrice: base,
+                  quantity: qty,
+                  basePrice: unitBase,
+                  subtotalBasePrice: subtotalBase,
                   gstPercentage: gstRate,
                   gstAmount: gstAmt,
                   effectivePrice: effective,
-                  totalAmount: effective,
+                  totalAmount: sp.totalAmount || effective,
                   dateStr: dateIsoStr,
                   monthStr: monthKey,
                 });
@@ -158,6 +164,10 @@ export function AnalysisView() {
       }
     }
     loadData();
+    const interval = setInterval(() => {
+      loadData();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Dynamically combine DB suppliers + past log entry suppliers for Company Vendor dropdown
@@ -291,6 +301,13 @@ export function AnalysisView() {
         const finalCategory = item.category === 'CUSTOM' ? item.customCategory.trim() : item.category;
         const supplierObj = allVendorsList.find((s) => s.id === item.supplierId);
 
+        const qty = parseFloat(item.quantity) || 1;
+        const unitBase = parseFloat(item.basePrice) || 0;
+        const subtotalBase = unitBase * qty;
+        const gstRate = parseFloat(item.gstPercentage) || 18;
+        const gstAmt = (subtotalBase * gstRate) / 100;
+        const effectivePrice = subtotalBase + gstAmt;
+
         const logData = {
           date: logDateInput,
           productName: item.productName.trim(),
@@ -299,8 +316,13 @@ export function AnalysisView() {
           specification: item.specification.trim(),
           brand: item.brand.trim() || 'Standard Solar',
           hsn: item.hsn.trim() || '8541',
-          basePrice: parseFloat(item.basePrice) || 0,
-          gstPercentage: parseFloat(item.gstPercentage) || 18,
+          quantity: qty,
+          basePrice: unitBase,
+          subtotalBasePrice: subtotalBase,
+          gstPercentage: gstRate,
+          gstAmount: gstAmt,
+          effectivePrice: effectivePrice,
+          totalAmount: effectivePrice,
           invoiceNo: item.invoiceNo.trim() || `FSCH/${Math.floor(10000 + Math.random() * 90000)}/25-26`,
           discount: item.discount.trim() || '—',
           supplierName: item.supplierId === 'OTHER' ? item.newCompanyName.trim() : supplierObj?.companyName,
@@ -324,6 +346,7 @@ export function AnalysisView() {
               ...logData,
               name: item.productName.trim(),
               unit: 'Pcs',
+              minimumOrderQuantity: qty,
               isNewSupplier: item.supplierId === 'OTHER',
               supplierId: item.supplierId,
             }),
@@ -343,10 +366,12 @@ export function AnalysisView() {
 
   const formattedApprovedItems = useMemo(() => {
     return approvedLogItems.map((item) => {
-      const base = item.basePrice || 0;
+      const qty = item.quantity || 1;
+      const unitBase = item.basePrice || 0;
+      const subtotalBase = item.subtotalBasePrice || unitBase * qty;
       const gstRate = item.gstPercentage || 18;
-      const gstAmt = (base * gstRate) / 100;
-      const effective = item.effectivePrice || base + gstAmt;
+      const gstAmt = item.gstAmount || (subtotalBase * gstRate) / 100;
+      const effective = item.effectivePrice || subtotalBase + gstAmt;
 
       let dateIsoStr = new Date().toISOString().split('T')[0];
       if (item.date) {
@@ -364,7 +389,9 @@ export function AnalysisView() {
         productName: item.productName || 'Solar Item',
         brand: item.brand || 'Standard Make',
         invoiceNo: item.invoiceNo || 'FSCH/00139/25-26',
-        basePrice: base,
+        quantity: qty,
+        basePrice: unitBase,
+        subtotalBasePrice: subtotalBase,
         gstPercentage: gstRate,
         gstAmount: gstAmt,
         effectivePrice: effective,
@@ -1277,7 +1304,7 @@ export function AnalysisView() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <div>
                         <label className="font-extrabold text-slate-700 block mb-1">Make / Brand</label>
                         <input
@@ -1314,6 +1341,19 @@ export function AnalysisView() {
                       </div>
 
                       <div>
+                        <label className="font-extrabold text-slate-700 block mb-1">Qty / Nos *</label>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          placeholder="1"
+                          value={item.quantity}
+                          onChange={(e) => handleUpdateItemField(item.id, 'quantity', e.target.value)}
+                          className="w-full bg-white border border-emerald-400 rounded-xl px-2.5 py-1.5 text-xs font-black text-emerald-800"
+                        />
+                      </div>
+
+                      <div>
                         <label className="font-extrabold text-slate-700 block mb-1">GST %</label>
                         <select
                           value={item.gstPercentage}
@@ -1326,6 +1366,16 @@ export function AnalysisView() {
                           <option value="28">28%</option>
                           <option value="0">0%</option>
                         </select>
+                      </div>
+
+                      {/* Dynamic Calculated Amount Display */}
+                      <div className="sm:col-span-5 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl flex flex-wrap items-center justify-between text-xs font-bold text-emerald-950 mt-1">
+                        <span>
+                          Subtotal Base: <span className="font-black text-slate-900">₹{((parseFloat(item.basePrice) || 0) * (parseFloat(item.quantity) || 1)).toLocaleString('en-IN')}</span> ({parseFloat(item.quantity) || 1} Nos @ ₹{parseFloat(item.basePrice) || 0}/ea)
+                        </span>
+                        <span>
+                          Total Incl. GST: <span className="font-black text-emerald-700 text-sm">₹{(((parseFloat(item.basePrice) || 0) * (parseFloat(item.quantity) || 1)) * (1 + (parseFloat(item.gstPercentage) || 18) / 100)).toLocaleString('en-IN')}</span>
+                        </span>
                       </div>
                     </div>
                   </div>
