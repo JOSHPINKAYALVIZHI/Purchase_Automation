@@ -417,6 +417,7 @@ export function SimpleProductComparer() {
         const compContact = selectedSupplierId === 'OTHER' ? newContactPerson.trim() : (selectedSup?.contactPerson || '');
 
         const newLogPayload = {
+          id: `LOG_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
           date: new Date().toISOString().split('T')[0],
           productName: formProductName.trim(),
           category: finalCategory.trim() || 'Solar Equipment',

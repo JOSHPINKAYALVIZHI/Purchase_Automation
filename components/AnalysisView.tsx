@@ -179,7 +179,7 @@ export function AnalysisView() {
               const monthKey = dateIsoStr.substring(0, 7);
 
               items.push({
-                id: item.id || `cloud_log_${Math.random()}`,
+                id: item.id || `cloud_log_${item.date || 'nodate'}_${(item.productName || 'p').toLowerCase()}_${(item.supplierName || 's').toLowerCase()}`,
                 supplierName: item.supplierName || item.newCompanyName || 'Vendor Company',
                 category: item.category || 'Solar Equipment',
                 productName: item.productName || 'Solar Item',
@@ -359,6 +359,7 @@ export function AnalysisView() {
         const effectivePrice = subtotalBase + gstAmt;
 
         const logData = {
+          id: `LOG_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
           date: logDateInput,
           productName: item.productName.trim(),
           category: finalCategory || 'Solar Equipment',

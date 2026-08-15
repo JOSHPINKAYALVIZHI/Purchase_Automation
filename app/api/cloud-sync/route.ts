@@ -46,21 +46,39 @@ export async function POST(request: NextRequest) {
 
     // 2. Merge new entries avoiding duplicates by unique ID / key
     const logsMap = new Map<string, any>();
-    currentLogs.forEach((l) => logsMap.set(l.id, l));
+    currentLogs.forEach((l, idx) => {
+      const logId = l.id || `log_${l.date || 'nodate'}_${(l.productName || 'item').toLowerCase().replace(/\s+/g, '_')}_${idx}`;
+      logsMap.set(logId, { ...l, id: logId });
+    });
     if (Array.isArray(newLogs)) {
-      newLogs.forEach((l) => logsMap.set(l.id, l));
+      newLogs.forEach((l, idx) => {
+        const logId = l.id || `log_${l.date || 'nodate'}_${(l.productName || 'item').toLowerCase().replace(/\s+/g, '_')}_${Date.now()}_${idx}`;
+        logsMap.set(logId, { ...l, id: logId });
+      });
     }
 
     const prodsMap = new Map<string, any>();
-    currentProducts.forEach((p) => prodsMap.set(p.id || p.name?.toLowerCase(), p));
+    currentProducts.forEach((p) => {
+      const pKey = p.id || (p.name ? p.name.toLowerCase().trim() : `prod_${Math.random()}`);
+      prodsMap.set(pKey, { ...p, id: pKey });
+    });
     if (Array.isArray(newProducts)) {
-      newProducts.forEach((p) => prodsMap.set(p.id || p.name?.toLowerCase(), p));
+      newProducts.forEach((p) => {
+        const pKey = p.id || (p.name ? p.name.toLowerCase().trim() : `prod_${Math.random()}`);
+        prodsMap.set(pKey, { ...p, id: pKey });
+      });
     }
 
     const supsMap = new Map<string, any>();
-    currentSuppliers.forEach((s) => supsMap.set(s.id || s.companyName?.toLowerCase(), s));
+    currentSuppliers.forEach((s) => {
+      const sKey = s.id || (s.companyName ? s.companyName.toLowerCase().trim() : `sup_${Math.random()}`);
+      supsMap.set(sKey, { ...s, id: sKey });
+    });
     if (Array.isArray(newSuppliers)) {
-      newSuppliers.forEach((s) => supsMap.set(s.id || s.companyName?.toLowerCase(), s));
+      newSuppliers.forEach((s) => {
+        const sKey = s.id || (s.companyName ? s.companyName.toLowerCase().trim() : `sup_${Math.random()}`);
+        supsMap.set(sKey, { ...s, id: sKey });
+      });
     }
 
     const updatedData = {
