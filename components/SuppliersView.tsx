@@ -173,7 +173,7 @@ export function SuppliersView() {
     });
 
     return Array.from(map.values());
-  }, [suppliers, approvedLogItems, dbProducts]);
+  }, [suppliers, approvedLogItems, cloudItems, dbProducts]);
 
   const filteredSuppliers = useMemo(() => {
     if (!search.trim()) return combinedSuppliers;

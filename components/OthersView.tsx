@@ -138,7 +138,7 @@ export function OthersView() {
       }
       return s;
     });
-  }, [suppliers, approvedLogItems, contactOverrides]);
+  }, [suppliers, approvedLogItems, cloudItems, contactOverrides]);
 
   const filteredSuppliers = useMemo(() => {
     return combinedSuppliers.filter((s) => {
@@ -192,7 +192,7 @@ export function OthersView() {
       )
     );
 
-    // 3. Persist to DB API
+    // 3. Persist to DB API & Global Multi-Device Cloud Sync
     try {
       await fetch('/api/suppliers', {
         method: 'PUT',
@@ -201,6 +201,17 @@ export function OthersView() {
           id: editingSupplier.id,
           companyName: editingSupplier.companyName,
           ...updatedData,
+        }),
+      });
+      await fetch('/api/cloud-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newSuppliers: [{
+            id: editingSupplier.id || `sup_${cKey}`,
+            companyName: editingSupplier.companyName,
+            ...updatedData,
+          }],
         }),
       });
     } catch (err) {

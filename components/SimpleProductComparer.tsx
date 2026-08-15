@@ -232,14 +232,14 @@ export function SimpleProductComparer() {
       }
     });
 
-    // 2. Add suppliers from approvedLogItems past data
-    approvedLogItems.forEach((item) => {
-      const cName = (item.supplierName || item.newCompanyName || '').trim();
+    // 2. Add suppliers from approvedLogItems & cloud sync past data
+    [...approvedLogItems, ...cloudItems].forEach((item) => {
+      const cName = (item.supplierName || item.companyName || item.newCompanyName || '').trim();
       if (cName && cName.toLowerCase() !== 'vendor') {
         const cKey = cName.toLowerCase();
         if (!map.has(cKey)) {
           map.set(cKey, {
-            id: `sup_log_${cKey}`,
+            id: item.id || `sup_log_${cKey}`,
             companyName: cName,
             phone: item.phone || item.newPhone || '',
             address: item.address || item.newAddress || '',
@@ -288,7 +288,7 @@ export function SimpleProductComparer() {
     });
 
     return Array.from(map.values());
-  }, [allSuppliersList, approvedLogItems, offers, products]);
+  }, [allSuppliersList, approvedLogItems, cloudItems, offers, products]);
 
   // Fetch suppliers list when Add Product modal opens
   const fetchSuppliersForModal = async () => {
