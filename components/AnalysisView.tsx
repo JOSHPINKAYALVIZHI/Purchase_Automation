@@ -442,14 +442,31 @@ export function AnalysisView() {
 
   // Overall Totals
   const totals = useMemo(() => {
-    const totalGrand = activeLogs.reduce((acc, curr) => acc + curr.effectivePrice, 0);
-    const totalBase = activeLogs.reduce((acc, curr) => acc + curr.basePrice, 0);
-    const totalGst = activeLogs.reduce((acc, curr) => acc + curr.gstAmount, 0);
+    let grandTotal = 0;
+    let baseTotal = 0;
+    let gstTotal = 0;
+    let lineItemsCount = 0;
+
+    activeLogs.forEach((item) => {
+      const qty = parseFloat(item.quantity) || 1;
+      const unitBase = parseFloat(item.basePrice) || 0;
+      const subBase = item.subtotalBasePrice !== undefined ? item.subtotalBasePrice : unitBase * qty;
+      const gstRate = parseFloat(item.gstPercentage) || 18;
+      const gstAmt = item.gstAmount !== undefined ? item.gstAmount : (subBase * gstRate) / 100;
+      const eff = item.effectivePrice || subBase + gstAmt;
+
+      grandTotal += eff;
+      baseTotal += subBase;
+      gstTotal += gstAmt;
+      lineItemsCount += qty;
+    });
+
     return {
-      grandTotal: totalGrand,
-      baseTotal: totalBase,
-      gstTotal: totalGst,
-      totalItems: activeLogs.length,
+      grandTotal,
+      baseTotal,
+      gstTotal,
+      lineItems: lineItemsCount,
+      productTypesCount: activeLogs.length,
     };
   }, [activeLogs]);
 
@@ -478,7 +495,7 @@ export function AnalysisView() {
     validCombinedLogs.forEach((l) => {
       if (map[l.monthStr]) {
         map[l.monthStr].total += l.effectivePrice;
-        map[l.monthStr].count += 1;
+        map[l.monthStr].count += (parseFloat(l.quantity) || 1);
       }
     });
 
@@ -502,7 +519,7 @@ export function AnalysisView() {
         map[l.dateStr] = { total: 0, count: 0, items: [] };
       }
       map[l.dateStr].total += l.effectivePrice;
-      map[l.dateStr].count += 1;
+      map[l.dateStr].count += (parseFloat(l.quantity) || 1);
       map[l.dateStr].items.push(l);
     });
     return map;
@@ -515,7 +532,7 @@ export function AnalysisView() {
       const cat = l.category || 'Solar Equipment';
       if (!map[cat]) map[cat] = { total: 0, count: 0 };
       map[cat].total += l.effectivePrice;
-      map[cat].count += 1;
+      map[cat].count += (parseFloat(l.quantity) || 1);
     });
 
     const sorted = Object.entries(map).sort((a, b) => b[1].total - a[1].total);
@@ -682,9 +699,9 @@ export function AnalysisView() {
             <PackageCheck className="h-5 w-5 text-emerald-600" />
           </div>
           <div className="text-2xl font-black text-slate-900">
-            {totals.totalItems} Items
+            {totals.lineItems} Nos
           </div>
-          <p className="text-[11px] text-slate-500 font-semibold">Across {categorySpend.length} Categories</p>
+          <p className="text-[11px] text-slate-500 font-semibold">{totals.productTypesCount} Product(s) across {categorySpend.length} Categories</p>
         </div>
       </div>
 
